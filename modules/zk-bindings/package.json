@@ -1,0 +1,8 @@
+{
+    "name": "zk-bindings",
+    "version": "1.0.0",
+    "description": "Native module for ZK operations with Rust",
+    "main": "index.ts",
+    "source": "index.ts",
+    "types": "index.d.ts"
+}

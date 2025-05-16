@@ -37,3 +37,6 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+/zink-rust-lib/target/
+/zink-rust-lib/generated-uniffi-bindings/
