@@ -3,8 +3,6 @@
 logs
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 lerna-debug.log*
 
 # Dependency directories
@@ -44,8 +42,6 @@ Desktop.ini
 # Output of 'npm pack'
 *.tgz
 
-# Yarn Integrity file
-.yarnclean
 
 # Editor directories and files
 .idea/
@@ -109,8 +105,7 @@ modules/zk-bindings/ios/xcuserdata/
 modules/zk-bindings/ios/*.xcworkspace/contents.xcworkspacedata # User-specific workspace data
 
 # Generated/copied Rust artifacts for iOS within the module
-modules/zk-bindings/ios/rust/libnative_rust.a
-modules/zk-bindings/ios/rust/libnative_rust_*.a # If you store arch-specific ones
+modules/zk-bindings/ios/rust/*.a
 modules/zk-bindings/ios/rust/swift/math.swift
 modules/zk-bindings/ios/rust/swift/mathFFI.h
 modules/zk-bindings/ios/rust/swift/mathFFI.modulemap
@@ -156,7 +151,3 @@ reports/
       # If there are sub-files in .eas/ that are user-specific, ignore them:
 .eas/persistent-cache/
 .eas/build-configuration-cache/
-
-# Firebase (if used and config files are downloaded locally and are sensitive)
-# google-services.json # Typically committed for Android if not sensitive per-environment
-# GoogleService-Info.plist # Typically committed for iOS if not sensitive per-environment
