@@ -1,9 +1,8 @@
 #!/usr/bin/env node
-import { execa } from "execa";
+import { spawn } from "child_process";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import parseArgs from "yargs-parser";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,54 +46,95 @@ function printHeader(message) {
   console.log(` ${message}`);
   console.log("-".repeat(50));
 }
+function executeCommand(command, args = [], options = {}) {
+  return new Promise((resolve, reject) => {
+    const commandStr = `${command} ${args.join(" ")}`;
+    console.log(
+      `🔩 Executing: ${commandStr}` + (options.cwd ? ` in ${options.cwd}` : ""),
+    );
 
-async function executeCommand(command, args = [], options = {}) {
-  const commandStr = `${command} ${args.join(" ")}`;
-  console.log(
-    `🔩 Executing: ${commandStr}` + (options.cwd ? ` in ${options.cwd}` : ""),
-  );
-  try {
-    const result = await execa(command, args, { stdio: "inherit", ...options });
-    if (result.failed) {
-      throw new Error(`Command failed: ${commandStr}`);
+    // Use 'pipe' for stdout/stderr when capturing output, otherwise 'inherit'
+    const stdio = options.captureOutput
+      ? ["inherit", "pipe", "pipe"]
+      : "inherit";
+
+    const proc = spawn(command, args, {
+      stdio,
+      cwd: options.cwd,
+      shell: false,
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    if (options.captureOutput) {
+      proc.stdout.on("data", (data) => {
+        stdout += data.toString();
+      });
+      proc.stderr.on("data", (data) => {
+        stderr += data.toString();
+      });
     }
-    console.log(`✅ Success: ${commandStr}`);
-    return result;
-  } catch (error) {
-    console.error(`❌ Error executing: ${commandStr}`);
-    // execa errors often have stderr/stdout properties that are useful
-    if (error.stderr) console.error("Stderr:", error.stderr);
-    if (error.stdout) console.error("Stdout:", error.stdout);
-    throw error; // Re-throw to stop the script
-  }
+
+    proc.on("error", (error) => {
+      console.error(`❌ Error executing: ${commandStr}`);
+      console.error(`Error: ${error.message}`);
+      reject(error);
+    });
+
+    proc.on("close", (code) => {
+      if (code === 0) {
+        console.log(`✅ Success: ${commandStr}`);
+        resolve({ stdout, stderr });
+      } else {
+        const error = new Error(
+          `Command failed with code ${code}: ${commandStr}`,
+        );
+        error.stdout = stdout;
+        error.stderr = stderr;
+        console.error(`❌ Error executing: ${commandStr}`);
+        if (stderr) console.error("Stderr:", stderr);
+        if (stdout) console.error("Stdout:", stdout);
+        reject(error);
+      }
+    });
+  });
 }
 
+async function checkRustTarget(target) {
+  try {
+    const result = await executeCommand(
+      "rustup",
+      ["target", "list", "--installed"],
+      {
+        captureOutput: true,
+      },
+    );
+    if (!result.stdout.includes(target)) {
+      console.error(`❌ Error: Rust target "${target}" is not installed.`);
+      console.error(`💡 Please install it with: rustup target add ${target}`);
+      process.exit(1);
+    }
+    console.log(`✅ Rust target "${target}" is installed.`);
+  } catch (error) {
+    console.error(
+      `❌ Error checking Rust target "${target}": ${error.message}`,
+    );
+    if (error.stderr) console.error("Stderr:", error.stderr);
+    if (error.stdout) console.error("Stdout:", error.stdout);
+    process.exit(1);
+  }
+}
 async function checkCommand(commandName, installHint = "") {
   try {
     // Split the command into executable and arguments
     const [executable, ...args] = commandName.split(" ");
-    await execa(executable, [...args, "--version"], { stdio: "ignore" });
+    await executeCommand(executable, [...args, "--version"]);
   } catch (_error) {
     console.error(
       `❌ Error: Command "${commandName}" not found or not executable.`,
     );
     if (installHint) console.error(`💡 Hint: ${installHint}`);
-    process.exit(1);
-  }
-}
-
-async function checkRustTarget(target) {
-  try {
-    const { stdout } = await execa("rustup", ["target", "list", "--installed"]);
-    if (!stdout.includes(target)) {
-      console.error(`❌ Error: Rust target "${target}" is not installed.`);
-      console.error(`💡 Please install it with: rustup target add ${target}`);
-      process.exit(1);
-    }
-  } catch (error) {
-    console.error(
-      `❌ Error checking Rust target "${target}": ${error.message}`,
-    );
     process.exit(1);
   }
 }
@@ -317,10 +357,15 @@ async function setupIOSPlatform(rustTarget) {
 
 // --- Main Script ---
 async function main() {
-  const argv = parseArgs(process.argv.slice(2), {
-    boolean: ["all", "android", "ios-sim", "ios-device", "help"],
-    alias: { h: "help" },
-  });
+  // Manual argument parsing
+  const args = process.argv.slice(2);
+  const argv = {
+    all: args.includes("--all"),
+    android: args.includes("--android"),
+    "ios-sim": args.includes("--ios-sim"),
+    "ios-device": args.includes("--ios-device"),
+    help: args.includes("--help") || args.includes("-h"),
+  };
 
   if (argv.help) {
     console.log(`
