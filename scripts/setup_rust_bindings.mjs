@@ -404,9 +404,16 @@ Note:
     await checkCommand("cargo ndk", "cargo install cargo-ndk");
     await checkRustTarget(DEFAULT_ANDROID_TARGET.arch);
   }
-  if (runIOSSim) await checkRustTarget(DEFAULT_IOS_SIM_TARGET.arch);
-  if (runIOSDevice) await checkRustTarget(DEFAULT_IOS_DEVICE_TARGET.arch);
-  if (runIOSSim || runIOSDevice) {
+  let iOSNeedsPodInstall = false;
+  if (runIOSSim) {
+    await checkRustTarget(DEFAULT_IOS_SIM_TARGET.arch);
+    iOSNeedsPodInstall = true;
+  }
+  if (runIOSDevice) {
+    await checkRustTarget(DEFAULT_IOS_DEVICE_TARGET.arch);
+    iOSNeedsPodInstall = true;
+  }
+  if (iOSNeedsPodInstall) {
     await checkCommand(
       "pod",
       "sudo gem install cocoapods (or brew install cocoapods)",
@@ -420,14 +427,11 @@ Note:
   await ensureDir(path.join(RUST_PROJECT_DIR, "generated", "swift"));
   console.log("Cleanup complete.");
 
-  let iOSNeedsPodInstall = false;
-
   if (runAndroid) {
     await setupAndroidPlatform(DEFAULT_ANDROID_TARGET);
   }
   if (runIOSSim) {
     await setupIOSPlatform(DEFAULT_IOS_SIM_TARGET);
-    iOSNeedsPodInstall = true;
   }
   if (runIOSDevice) {
     // Note: Building for both sim and device might require creating a universal binary (fat lib) for libnative_rust.a
@@ -437,7 +441,6 @@ Note:
       "⚠️ Building for iOS device. If also building for simulator, the `libnative_rust.a` might be overwritten. Consider a universal binary build step.",
     );
     await setupIOSPlatform(DEFAULT_IOS_DEVICE_TARGET);
-    iOSNeedsPodInstall = true;
   }
 
   if (iOSNeedsPodInstall) {
