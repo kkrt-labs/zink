@@ -1,0 +1,423 @@
+#!/usr/bin/env node
+import { execa } from "execa";
+import fs from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
+import parseArgs from "yargs-parser";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// --- Configuration ---
+const PROJECT_ROOT_DIR = path.resolve(__dirname, "..");
+const RUST_PROJECT_DIR = path.join(PROJECT_ROOT_DIR, "native_rust");
+const EXPO_MODULE_DIR = path.join(PROJECT_ROOT_DIR, "modules", "zk-bindings");
+
+const ANDROID_PLATFORM_VERSION = "21"; // From your module's build.gradle minSdkVersion
+
+const ANDROID_TARGETS = [
+  {
+    arch: "aarch64-linux-android",
+    jniLibsSubdir: "arm64-v8a",
+    libName: "libnative_rust.so",
+  },
+  // TODO: Add other targets as needed:
+  // { arch: "armv7-linux-androideabi", jniLibsSubdir: "armeabi-v7a", libName: "libnative_rust.so" },
+  // { arch: "i686-linux-android", jniLibsSubdir: "x86", libName: "libnative_rust.so" },
+  // { arch: "x86_64-linux-android", jniLibsSubdir: "x86_64", libName: "libnative_rust.so" },
+];
+
+const IOS_TARGETS = [
+  {
+    arch: "aarch64-apple-ios-sim",
+    type: "simulator",
+    libName: "libnative_rust.a",
+  },
+  { arch: "aarch64-apple-ios", type: "device", libName: "libnative_rust.a" },
+  // TODO: Potentially x86_64-apple-ios for older simulators, but aarch64-apple-ios-sim covers modern ones
+];
+
+const DEFAULT_ANDROID_TARGET = ANDROID_TARGETS[0]; // aarch64-linux-android
+const DEFAULT_IOS_SIM_TARGET = IOS_TARGETS.find((t) => t.type === "simulator");
+const DEFAULT_IOS_DEVICE_TARGET = IOS_TARGETS.find((t) => t.type === "device");
+
+// --- Helper Functions ---
+function printHeader(message) {
+  console.log("\n" + "-".repeat(50));
+  console.log(` ${message}`);
+  console.log("-".repeat(50));
+}
+
+async function executeCommand(command, args = [], options = {}) {
+  const commandStr = `${command} ${args.join(" ")}`;
+  console.log(
+    `🔩 Executing: ${commandStr}` + (options.cwd ? ` in ${options.cwd}` : ""),
+  );
+  try {
+    const result = await execa(command, args, { stdio: "inherit", ...options });
+    if (result.failed) {
+      throw new Error(`Command failed: ${commandStr}`);
+    }
+    console.log(`✅ Success: ${commandStr}`);
+    return result;
+  } catch (error) {
+    console.error(`❌ Error executing: ${commandStr}`);
+    // execa errors often have stderr/stdout properties that are useful
+    if (error.stderr) console.error("Stderr:", error.stderr);
+    if (error.stdout) console.error("Stdout:", error.stdout);
+    throw error; // Re-throw to stop the script
+  }
+}
+
+async function checkCommand(commandName, installHint = "") {
+  try {
+    // Split the command into executable and arguments
+    const [executable, ...args] = commandName.split(" ");
+    await execa(executable, [...args, "--version"], { stdio: "ignore" });
+  } catch (_error) {
+    console.error(
+      `❌ Error: Command "${commandName}" not found or not executable.`,
+    );
+    if (installHint) console.error(`💡 Hint: ${installHint}`);
+    process.exit(1);
+  }
+}
+
+async function checkRustTarget(target) {
+  try {
+    const { stdout } = await execa("rustup", ["target", "list", "--installed"]);
+    if (!stdout.includes(target)) {
+      console.error(`❌ Error: Rust target "${target}" is not installed.`);
+      console.error(`💡 Please install it with: rustup target add ${target}`);
+      process.exit(1);
+    }
+  } catch (error) {
+    console.error(
+      `❌ Error checking Rust target "${target}": ${error.message}`,
+    );
+    process.exit(1);
+  }
+}
+
+async function ensureDir(dirPath) {
+  await fs.mkdir(dirPath, { recursive: true });
+}
+
+async function copyFile(source, destination) {
+  await ensureDir(path.dirname(destination));
+  await fs.copyFile(source, destination);
+  console.log(
+    `Copied ${path.relative(PROJECT_ROOT_DIR, source)} to ${path.relative(PROJECT_ROOT_DIR, destination)}`,
+  );
+}
+
+async function copyDir(source, destination) {
+  await ensureDir(destination);
+  await fs.cp(source, destination, { recursive: true });
+  console.log(
+    `Copied dir ${path.relative(PROJECT_ROOT_DIR, source)} to ${path.relative(PROJECT_ROOT_DIR, destination)}`,
+  );
+}
+
+async function removeDir(dirPath) {
+  console.log(
+    `🗑️ Removing directory: ${path.relative(PROJECT_ROOT_DIR, dirPath)}`,
+  );
+  await fs.rm(dirPath, { recursive: true, force: true });
+}
+
+async function checkFileContent(filePath, searchString, expectedMessage) {
+  try {
+    const content = await fs.readFile(filePath, "utf-8");
+    if (!content.includes(searchString)) {
+      console.warn(
+        `⚠️ Warning: ${expectedMessage} might be missing or incorrect.`,
+      );
+      console.warn(`  Expected to find "${searchString}" in ${filePath}`);
+    } else {
+      console.log(
+        `✅ Content check passed for "${searchString}" in ${filePath}.`,
+      );
+    }
+  } catch (error) {
+    console.warn(
+      `⚠️ Warning: Could not read file ${filePath} to check for "${searchString}". ${error.message}`,
+    );
+  }
+}
+
+// --- Platform Specific Setup ---
+
+async function setupAndroidPlatform(rustTarget) {
+  printHeader(
+    `Android: Building Rust for ${rustTarget.arch} and Generating Kotlin Bindings`,
+  );
+
+  console.log(`Compiling Rust for Android target: ${rustTarget.arch}`);
+  await executeCommand(
+    "cargo",
+    [
+      "ndk",
+      "--target",
+      rustTarget.arch,
+      "--platform",
+      ANDROID_PLATFORM_VERSION,
+      "--", // Separator for cargo build args
+      "build",
+      "--release",
+      "--lib",
+    ],
+    { cwd: RUST_PROJECT_DIR },
+  );
+  console.log("Rust compilation for Android complete.");
+
+  const libraryPath = path.join(
+    RUST_PROJECT_DIR,
+    "target",
+    rustTarget.arch,
+    "release",
+    rustTarget.libName,
+  );
+  const kotlinOutDir = path.join(RUST_PROJECT_DIR, "generated", "kotlin");
+
+  console.log("Generating Kotlin bindings for Android");
+  await executeCommand(
+    "cargo",
+    [
+      "run",
+      "--features=uniffi/cli",
+      "--bin",
+      "uniffi-bindgen",
+      "generate",
+      "--library",
+      libraryPath,
+      "--language",
+      "kotlin",
+      "--out-dir",
+      kotlinOutDir,
+    ],
+    { cwd: RUST_PROJECT_DIR },
+  );
+  console.log("Kotlin bindings generated.");
+
+  console.log("Copying Android artifacts to zk-bindings module");
+  const androidJniDir = path.join(
+    EXPO_MODULE_DIR,
+    "android",
+    "src",
+    "main",
+    "jniLibs",
+    rustTarget.jniLibsSubdir,
+  );
+  await copyFile(libraryPath, path.join(androidJniDir, rustTarget.libName));
+
+  const kotlinBindingsSourceDir = path.join(kotlinOutDir, "uniffi");
+  const kotlinBindingsDestDir = path.join(
+    EXPO_MODULE_DIR,
+    "android",
+    "src",
+    "main",
+    "java",
+    "uniffi",
+  );
+  await removeDir(kotlinBindingsDestDir); // Clean destination first
+  await copyDir(kotlinBindingsSourceDir, kotlinBindingsDestDir);
+
+  await checkFileContent(
+    path.join(EXPO_MODULE_DIR, "android", "build.gradle"),
+    "net.java.dev.jna:jna",
+    "JNA dependency 'net.java.dev.jna:jna:5.13.0@aar'",
+  );
+  console.log(`Android setup for ${rustTarget.arch} complete.`);
+}
+
+async function setupIOSPlatform(rustTarget) {
+  const platformType =
+    rustTarget.type === "simulator" ? "iOS Simulator" : "iOS Device";
+  printHeader(
+    `iOS: Building Rust for ${platformType} (${rustTarget.arch}) and Generating Swift Bindings`,
+  );
+
+  console.log(`Compiling Rust for ${platformType} target: ${rustTarget.arch}`);
+  await executeCommand(
+    "cargo",
+    ["build", "--release", "--target", rustTarget.arch, "--lib"],
+    { cwd: RUST_PROJECT_DIR },
+  );
+  console.log(`Rust compilation for ${platformType} complete.`);
+
+  const libraryPath = path.join(
+    RUST_PROJECT_DIR,
+    "target",
+    rustTarget.arch,
+    "release",
+    rustTarget.libName,
+  );
+  const swiftOutDir = path.join(RUST_PROJECT_DIR, "generated", "swift");
+
+  console.log(`Generating Swift bindings for ${platformType}`);
+  await executeCommand(
+    "cargo",
+    [
+      "run",
+      "--features=uniffi/cli",
+      "--bin",
+      "uniffi-bindgen",
+      "generate",
+      "--library",
+      libraryPath,
+      "--language",
+      "swift",
+      "--out-dir",
+      swiftOutDir,
+    ],
+    { cwd: RUST_PROJECT_DIR },
+  );
+  console.log("Swift bindings generated.");
+
+  console.log("Copying iOS artifacts to zk-bindings module");
+  const iosRustSwiftDir = path.join(EXPO_MODULE_DIR, "ios", "rust", "swift");
+  const iosRustLibDir = path.join(EXPO_MODULE_DIR, "ios", "rust");
+
+  // For now, we'll just copy the specific target's .a file.
+  // A real setup might involve creating a universal binary (lipo) if both sim and device are built.
+  await copyFile(
+    libraryPath,
+    path.join(iosRustLibDir, `libnative_rust_${rustTarget.type}.a`),
+  ); // Distinguish by type for now
+  // The Podspec would need to be adjusted or use a universal binary.
+  // For simplicity, let's assume the Podspec points to a generic name and we overwrite it
+  // or that the user manages which .a file to use (e.g. via XCode build settings or a universal binary step)
+  // For this script, we'll just copy the latest one built to the standard name.
+  await copyFile(libraryPath, path.join(iosRustLibDir, `libnative_rust.a`));
+
+  await copyFile(
+    path.join(swiftOutDir, "math.swift"),
+    path.join(iosRustSwiftDir, "math.swift"),
+  );
+  await copyFile(
+    path.join(swiftOutDir, "mathFFI.h"),
+    path.join(iosRustSwiftDir, "mathFFI.h"),
+  );
+  await copyFile(
+    path.join(swiftOutDir, "mathFFI.modulemap"),
+    path.join(iosRustSwiftDir, "mathFFI.modulemap"),
+  );
+  console.log("Swift bindings copied.");
+
+  await checkFileContent(
+    path.join(EXPO_MODULE_DIR, "ios", "ZkBindings.podspec"),
+    "s.vendored_libraries",
+    "Podspec `s.vendored_libraries`",
+  );
+  console.log(
+    `iOS setup for ${platformType} (${rustTarget.arch}) complete. Pod install will run if any iOS target was processed.`,
+  );
+}
+
+// --- Main Script ---
+async function main() {
+  const argv = parseArgs(process.argv.slice(2), {
+    boolean: ["all", "android", "ios-sim", "ios-device", "help"],
+    alias: { h: "help" },
+  });
+
+  if (argv.help) {
+    console.log(`
+Usage: node scripts/setup_rust_bindings.mjs [options]
+
+Options:
+  --all           Build for Android (default arch) and iOS Simulator (default arch). This is the default if no specific platform is chosen.
+  --android       Build for Android (default: ${DEFAULT_ANDROID_TARGET.arch}).
+  --ios-sim       Build for iOS Simulator (default: ${DEFAULT_IOS_SIM_TARGET.arch}).
+  --ios-device    Build for iOS Device (default: ${DEFAULT_IOS_DEVICE_TARGET.arch}).
+  --help, -h      Show this help message.
+
+Note:
+- You can configure specific architectures within the script.
+- Ensure Rust targets are installed (e.g., 'rustup target add <target_arch>').
+- This script assumes 'cargo-ndk' is installed for Android builds.
+    `);
+    process.exit(0);
+  }
+
+  // Determine what to run
+  const runAll =
+    argv.all || (!argv.android && !argv["ios-sim"] && !argv["ios-device"]);
+  const runAndroid = argv.android || runAll;
+  const runIOSSim = argv["ios-sim"] || runAll;
+  const runIOSDevice = argv["ios-device"];
+
+  printHeader("Starting Rust Bindings Setup for Zink (Node.js script)");
+  process.chdir(PROJECT_ROOT_DIR);
+  console.log(`Working directory: ${process.cwd()}`);
+
+  printHeader("Checking Prerequisites");
+  await checkCommand("rustup");
+  await checkCommand("cargo");
+  await checkCommand(
+    "pod",
+    "sudo gem install cocoapods (or brew install cocoapods)",
+  );
+  if (runAndroid) {
+    await checkCommand("cargo ndk", "cargo install cargo-ndk");
+    await checkRustTarget(DEFAULT_ANDROID_TARGET.arch);
+  }
+  if (runIOSSim) await checkRustTarget(DEFAULT_IOS_SIM_TARGET.arch);
+  if (runIOSDevice) await checkRustTarget(DEFAULT_IOS_DEVICE_TARGET.arch);
+  console.log("Prerequisites met.");
+
+  printHeader("Cleaning up temporary Rust generated files");
+  await removeDir(path.join(RUST_PROJECT_DIR, "generated"));
+  await ensureDir(path.join(RUST_PROJECT_DIR, "generated", "kotlin"));
+  await ensureDir(path.join(RUST_PROJECT_DIR, "generated", "swift"));
+  console.log("Cleanup complete.");
+
+  let iOSNeedsPodInstall = false;
+
+  if (runAndroid) {
+    await setupAndroidPlatform(DEFAULT_ANDROID_TARGET);
+  }
+  if (runIOSSim) {
+    await setupIOSPlatform(DEFAULT_IOS_SIM_TARGET);
+    iOSNeedsPodInstall = true;
+  }
+  if (runIOSDevice) {
+    // Note: Building for both sim and device might require creating a universal binary (fat lib) for libnative_rust.a
+    // This script currently overwrites libnative_rust.a with the last built target.
+    // For a robust setup, you'd use `lipo` to combine device and simulator .a files.
+    console.warn(
+      "⚠️ Building for iOS device. If also building for simulator, the `libnative_rust.a` might be overwritten. Consider a universal binary build step.",
+    );
+    await setupIOSPlatform(DEFAULT_IOS_DEVICE_TARGET);
+    iOSNeedsPodInstall = true;
+  }
+
+  if (iOSNeedsPodInstall) {
+    printHeader("iOS: Running pod install");
+    await executeCommand("pod", ["install"], {
+      cwd: path.join(PROJECT_ROOT_DIR, "ios"),
+    });
+    console.log("Pod install complete.");
+  }
+
+  printHeader(
+    "Cleaning up temporary Rust generated files from native_rust/generated",
+  );
+  await removeDir(path.join(RUST_PROJECT_DIR, "generated"));
+  console.log("Cleanup complete.");
+
+  printHeader("Rust Bindings Setup for Zink Finished Successfully!");
+  console.log("💡 You can now try building your app:");
+  console.log("   npx expo run:android");
+  console.log("   npx expo run:ios");
+}
+
+main().catch((err) => {
+  console.error("❌ Script failed:", err.message || err);
+  if (err.stack && !err.message.includes(err.stack)) {
+    // Avoid duplicate stack if already in message
+    console.error(err.stack);
+  }
+  process.exit(1);
+});
