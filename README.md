@@ -34,11 +34,7 @@ This project uses a Rust library (`native_rust`) integrated via UniFFI. The nati
 
 A Node.js script is provided to automate the Rust compilation, binding generation, and file copying process.
 
-1.  **Install script dependencies (if you haven't already):**
-    ```bash
-    npm install --save-dev execa yargs-parser
-    ```
-2.  **Run the script from the project root:**
+1.  **Run the script from the project root:**
 
     ```bash
     node scripts/setup_rust_bindings.mjs [options]
@@ -50,7 +46,7 @@ A Node.js script is provided to automate the Rust compilation, binding generatio
     - `--android`: Build for Android only.
     - `--ios-sim`: Build for iOS Simulator only.
     - `--ios-device`: Build for iOS Device only (default arch: `aarch64-apple-ios`).
-      - **Note**: If building for both device and simulator, be aware that `libnative_rust.a` might be overwritten. A proper setup for this scenario would involve creating a universal binary using `lipo`, which is not yet implemented in this script.
+      - **Note**: If building for both device and simulator, be aware that `libnative_rust.a` might be overwritten.
     - `--help` or `-h`: Display help information.
 
     **Example Usage:**
@@ -101,7 +97,7 @@ If this is the first time setting up the project or if you've cleaned the native
     npx expo prebuild --clean
     ```
     - **Android Note**: If `npx expo run:android` fails after prebuild with Gradle issues, opening the `./android` project in Android Studio once can often resolve these by allowing it to sync and set up correctly.
-3.  **Run the `setup_rust_bindings.mjs` script** as described above to build and integrate the Rust code (e.g., `node scripts/setup_rust_bindings.mjs --all`).
+3.  **Run the `setup_rust_bindings.mjs` script** as described above to build and integrate the Rust code (e.g., `node scripts/setup_rust_bindings.mjs --all` or alternatively `npm run generate-bindings`).
 
 ## Learn more
 

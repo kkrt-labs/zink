@@ -400,16 +400,18 @@ Note:
   printHeader("Checking Prerequisites");
   await checkCommand("rustup");
   await checkCommand("cargo");
-  await checkCommand(
-    "pod",
-    "sudo gem install cocoapods (or brew install cocoapods)",
-  );
   if (runAndroid) {
     await checkCommand("cargo ndk", "cargo install cargo-ndk");
     await checkRustTarget(DEFAULT_ANDROID_TARGET.arch);
   }
   if (runIOSSim) await checkRustTarget(DEFAULT_IOS_SIM_TARGET.arch);
   if (runIOSDevice) await checkRustTarget(DEFAULT_IOS_DEVICE_TARGET.arch);
+  if (runIOSSim || runIOSDevice) {
+    await checkCommand(
+      "pod",
+      "sudo gem install cocoapods (or brew install cocoapods)",
+    );
+  }
   console.log("Prerequisites met.");
 
   printHeader("Cleaning up temporary Rust generated files");
