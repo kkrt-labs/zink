@@ -26,6 +26,15 @@ You can start developing by editing the files inside the **app** directory. This
 
 This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
+### Setting Up the Pre-Push Hook
+
+To ensure builds pass before pushing, install the pre-push hook:
+
+```bash
+cp scripts/pre-push.sh .git/hooks/pre-push
+chmod +x .git/hooks/pre-push
+```
+
 ## Setup and Building Native Bindings
 
 This project uses a Rust library (`native_rust`) integrated via UniFFI. The native bindings (Kotlin for Android, Swift for iOS) are generated and copied into the `zk-bindings` Expo module.
