@@ -37,8 +37,6 @@ A Node.js script is provided to automate the Rust compilation, binding generatio
 1.  **Install script dependencies (if you haven't already):**
     ```bash
     npm install --save-dev execa yargs-parser
-    # or
-    yarn add --dev execa yargs-parser
     ```
 2.  **Run the script from the project root:**
 
@@ -91,11 +89,12 @@ You should re-run this script whenever you make changes to:
 If this is the first time setting up the project or if you've cleaned the native directories:
 
 1.  **Install JavaScript dependencies:**
+
     ```bash
     npm install
-    # or
-    # yarn install
+
     ```
+
 2.  **Generate native platform projects (if not already present):**
     This step creates the `/ios` and `/android` directories at the project root, which are necessary for custom native code.
     ```bash
