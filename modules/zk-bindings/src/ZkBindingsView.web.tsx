@@ -1,6 +1,6 @@
-import * as React from 'react';
+import * as React from "react";
 
-import { ZkBindingsViewProps } from './ZkBindings.types';
+import { ZkBindingsViewProps } from "./ZkBindings.types";
 
 export default function ZkBindingsView(props: ZkBindingsViewProps) {
   return (

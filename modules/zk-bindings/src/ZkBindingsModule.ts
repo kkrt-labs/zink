@@ -1,6 +1,6 @@
-import { NativeModule, requireNativeModule } from 'expo';
+import { NativeModule, requireNativeModule } from "expo";
 
-import { ZkBindingsModuleEvents } from './ZkBindings.types';
+import { ZkBindingsModuleEvents } from "./ZkBindings.types";
 
 declare class ZkBindingsModule extends NativeModule<ZkBindingsModuleEvents> {
   PI: number;
@@ -9,4 +9,4 @@ declare class ZkBindingsModule extends NativeModule<ZkBindingsModuleEvents> {
 }
 
 // This call loads the native module object from the JSI.
-export default requireNativeModule<ZkBindingsModule>('ZkBindings');
+export default requireNativeModule<ZkBindingsModule>("ZkBindings");

@@ -1,0 +1,193 @@
+name: PR Checks
+
+permissions:
+  contents: read
+  pull-requests: read
+
+on:
+  pull_request:
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  lint-and-format:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18.x" # Match your .trunk/trunk.yaml
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      # If you use Trunk for formatting/linting in CI
+      - name: Setup Trunk
+        uses: trunk-io/trunk-action@v1
+
+      - name: Run Trunk Linters (if applicable beyond Prettier/Markdownlint)
+        run: trunk check --ci --all --no-fix --filter-by-target='**/*' # Run all linters
+
+  build-rust-all-targets:
+    name: Build Rust & Generate Bindings
+    runs-on: ubuntu-latest # Can be Linux as it's just Rust compilation + script
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18.x"
+          cache: "npm"
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy # Optional, for Rust-specific linting/formatting
+          # Targets needed by your setup_rust_bindings.mjs script
+          targets: aarch64-linux-android, aarch64-apple-ios-sim, aarch64-apple-ios
+
+      - name: Install cargo-ndk (for Android Rust builds)
+        run: cargo install cargo-ndk
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./native_rust -> target" # Cache the target dir of native_rust
+
+      - name: Install JS dependencies
+        run: npm install
+
+      - name: Generate Bindings for All Platforms
+        run: node scripts/setup_rust_bindings.mjs --all
+        # This script handles:
+        # - Rust compilation for Android (aarch64)
+        # - Rust compilation for iOS Sim (aarch64)
+        # - Rust compilation for iOS Device (aarch64)
+        # - UniFFI binding generation
+        # - Copying artifacts to modules/zk-bindings
+        # It does NOT run pod install here, that's for the iOS app build job.
+
+      - name: Upload zk-bindings module artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: zk-bindings-module
+          path: |
+            modules/zk-bindings/android/src/main/java/uniffi/
+            modules/zk-bindings/android/src/main/jniLibs/
+            modules/zk-bindings/ios/rust/
+            # Add other relevant generated paths if any
+
+  build-android-app:
+    name: Build Android App
+    runs-on: ubuntu-latest
+    needs: build-rust-all-targets # Depends on bindings being generated
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18.x"
+          cache: "npm"
+
+      - name: Setup Java (for Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17" # Or version required by your Android Gradle Plugin
+
+      - name: Download zk-bindings module artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: zk-bindings-module
+          path: modules/zk-bindings # Download into the correct location
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Install JS dependencies
+        run: npm install
+
+      - name: Prebuild Android project
+        run: npx expo prebuild --platform android --no-install # --no-install if pod install is separate
+
+      - name: Build Android App (Debug)
+        run: |
+          cd android
+          # Grant execute permission to gradlew
+          chmod +x ./gradlew
+          ./gradlew assembleDebug # Or assembleRelease if preferred
+
+  build-ios-app:
+    name: Build iOS App
+    runs-on: macos-latest # iOS builds require macOS
+    needs: build-rust-all-targets # Depends on bindings being generated
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18.x"
+          cache: "npm"
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_$(xcodebuild -version | grep Xcode | cut -d' ' -f2 | cut -d'.' -f1).app # Selects latest major Xcode
+
+      - name: Download zk-bindings module artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: zk-bindings-module
+          path: modules/zk-bindings # Download into the correct location
+
+      - name: Cache Pods
+        uses: actions/cache@v4
+        with:
+          path: ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+
+      - name: Install JS dependencies
+        run: npm install
+
+      - name: Prebuild iOS project
+        run: npx expo prebuild --platform ios --no-install
+
+      - name: Install Pods
+        run: cd ios && pod install
+
+      - name: Build iOS App (Simulator)
+        run: |
+          cd ios
+          # Find a simulator, e.g., latest iPhone simulator
+          # This is a bit more robust than hardcoding
+          SIMULATOR_UDID=$(xcrun simctl list devices available | grep -o 'iPhone.*iOS .* ([A-F0-9-]\+)' | tail -n 1 | grep -o '([A-F0-9-]\+)' | tr -d '()')
+          if [ -z "$SIMULATOR_UDID" ]; then
+            echo "No available iPhone simulator found."
+            exit 1
+          fi
+          echo "Using simulator UDID: $SIMULATOR_UDID"
+          # Note: Your project scheme is 'zink' from app.json
+          # The workspace is Zink.xcworkspace (standard for Expo prebuild with pods)
+          xcodebuild \
+            -workspace Zink.xcworkspace \
+            -scheme Zink \
+            -sdk iphonesimulator \
+            -destination "id=$SIMULATOR_UDID" \
+            build CODE_SIGNING_ALLOWED=NO # For simulator builds, signing is not usually needed

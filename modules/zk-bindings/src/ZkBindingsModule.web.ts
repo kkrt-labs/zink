@@ -1,19 +1,19 @@
-import { NativeModule, registerWebModule } from 'expo';
+import { NativeModule, registerWebModule } from "expo";
 
-import { ChangeEventPayload } from './ZkBindings.types';
+import { ChangeEventPayload } from "./ZkBindings.types";
 
 type ZkBindingsModuleEvents = {
   onChange: (params: ChangeEventPayload) => void;
-}
+};
 
 class ZkBindingsModule extends NativeModule<ZkBindingsModuleEvents> {
   PI = Math.PI;
   async setValueAsync(value: string): Promise<void> {
-    this.emit('onChange', { value });
+    this.emit("onChange", { value });
   }
   hello() {
-    return 'Hello world! 👋';
+    return "Hello world! 👋";
   }
-};
+}
 
-export default registerWebModule(ZkBindingsModule, 'ZkBindingsModule');
+export default registerWebModule(ZkBindingsModule, "ZkBindingsModule");
