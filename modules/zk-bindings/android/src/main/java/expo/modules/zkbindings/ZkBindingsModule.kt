@@ -3,7 +3,7 @@ package expo.modules.zkbindings
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.net.URL
-import uniffi.math.add
+import uniffi.native_rust.add
 
 
 class ZkBindingsModule : Module() {

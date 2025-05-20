@@ -106,9 +106,9 @@ modules/zk-bindings/ios/*.xcworkspace/contents.xcworkspacedata # User-specific w
 
 # Generated/copied Rust artifacts for iOS within the module
 modules/zk-bindings/ios/rust/*.a
-modules/zk-bindings/ios/rust/swift/math.swift
-modules/zk-bindings/ios/rust/swift/mathFFI.h
-modules/zk-bindings/ios/rust/swift/mathFFI.modulemap
+modules/zk-bindings/ios/rust/swift/native_rust.swift
+modules/zk-bindings/ios/rust/swift/native_rustFFI.h
+modules/zk-bindings/ios/rust/swift/native_rustFFI.modulemap
 
 # Generic build folders that might appear in any module
 modules/**/build/

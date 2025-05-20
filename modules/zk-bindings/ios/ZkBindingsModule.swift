@@ -20,7 +20,7 @@ public class ZkBindingsModule: Module {
 
     // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
     Function("hello") {
-      let result = add(a: 1, b: 2)
+      let result = add(left: 1, right: 2)
       return "Hello world! 👋 \(result)"
     }
 
