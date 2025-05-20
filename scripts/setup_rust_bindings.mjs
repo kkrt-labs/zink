@@ -332,16 +332,16 @@ async function setupIOSPlatform(rustTarget) {
   await copyFile(libraryPath, path.join(iosRustLibDir, `libnative_rust.a`));
 
   await copyFile(
-    path.join(swiftOutDir, "math.swift"),
-    path.join(iosRustSwiftDir, "math.swift"),
+    path.join(swiftOutDir, "native_rust.swift"),
+    path.join(iosRustSwiftDir, "native_rust.swift"),
   );
   await copyFile(
-    path.join(swiftOutDir, "mathFFI.h"),
-    path.join(iosRustSwiftDir, "mathFFI.h"),
+    path.join(swiftOutDir, "native_rustFFI.h"),
+    path.join(iosRustSwiftDir, "native_rustFFI.h"),
   );
   await copyFile(
-    path.join(swiftOutDir, "mathFFI.modulemap"),
-    path.join(iosRustSwiftDir, "mathFFI.modulemap"),
+    path.join(swiftOutDir, "native_rustFFI.modulemap"),
+    path.join(iosRustSwiftDir, "native_rustFFI.modulemap"),
   );
   console.log("Swift bindings copied.");
 
