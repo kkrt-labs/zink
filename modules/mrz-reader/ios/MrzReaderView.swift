@@ -1,4 +1,3 @@
-// modules/mrz-reader/ios/MrzReaderView.swift
 import ExpoModulesCore
 import AVFoundation
 import Vision
@@ -21,7 +20,6 @@ public class MrzReaderView: ExpoView, AVCaptureVideoDataOutputSampleBufferDelega
 
     let onMrzExtracted = EventDispatcher()
     let onError = EventDispatcher()
-
 
     // MARK: - Initialization and Lifecycle
 
@@ -338,7 +336,7 @@ public class MrzReaderView: ExpoView, AVCaptureVideoDataOutputSampleBufferDelega
         // Line 1: P<CCCDocumentNumber<<Name
         let documentType = String(line1.prefix(2)) // e.g., "P<" or "P "
         let issuingCountry = String(line1[line1.index(line1.startIndex, offsetBy: 2)..<line1.index(line1.startIndex, offsetBy: 5)]) // e.g., "USA"
-        let nameSection = String(line1[line1.index(line1.startIndex, offsetBy: 5)..<line1.endIndex]).split(separator: "<<")
+        let nameSection = String(line1[line1.index(line1.startIndex, offsetBy: 5)..<line1.endIndex]).components(separatedBy: "<<")
         let surname = nameSection[0].replacingOccurrences(of: "<", with: " ").trimmingCharacters(in: .whitespaces)
         let givenNames = nameSection.count > 1 ? nameSection[1].replacingOccurrences(of: "<", with: " ").trimmingCharacters(in: .whitespaces) : ""
         
