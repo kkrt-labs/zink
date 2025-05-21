@@ -28,10 +28,6 @@ if (useManagedAndroidSdkVersions) {
       minSdkVersion safeExtGet("minSdkVersion", 21)
       targetSdkVersion safeExtGet("targetSdkVersion", 34)
     }
-    compileOptions { // Ensure Java 8 compatibility for some libraries
-      sourceCompatibility JavaVersion.VERSION_1_8
-      targetCompatibility JavaVersion.VERSION_1_8
-    }
   }
 }
 

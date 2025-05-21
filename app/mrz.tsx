@@ -13,7 +13,6 @@ export default function MRZScannerPage() {
       "MRZ Scanned",
       `Raw MRZ: ${JSON.stringify(nativeEvent, null, 2)}`,
     );
-    // You might want to navigate away or stop the camera here
   };
 
   const handleMrzError = ({
