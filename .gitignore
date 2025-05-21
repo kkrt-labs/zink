@@ -151,3 +151,5 @@ reports/
       # If there are sub-files in .eas/ that are user-specific, ignore them:
 .eas/persistent-cache/
 .eas/build-configuration-cache/
+
+*.apk

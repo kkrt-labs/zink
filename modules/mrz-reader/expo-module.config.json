@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["MrzReaderModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.mrzreader.MrzReaderModule"]
+  }
+}
