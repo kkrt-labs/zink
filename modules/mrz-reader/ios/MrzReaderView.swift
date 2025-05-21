@@ -297,7 +297,7 @@ public class MrzReaderView: ExpoView, AVCaptureVideoDataOutputSampleBufferDelega
         // TODO: Add parsing for TD1 (3 lines of 30) or TD2 (2 lines of 36) if needed
     }
 
-    private func validateCheckDigit(value: String, checkDigit: Character) -> Bool {
+    internal func validateCheckDigit(value: String, checkDigit: Character) -> Bool {
         // ICAO 9303 check digit calculation: 
         // Each character (A-Z = 10-35, 0-9 = 0-9, < = 0) is multiplied by weights [7, 3, 1] repeating.
         let weights = [7, 3, 1]
@@ -324,7 +324,7 @@ public class MrzReaderView: ExpoView, AVCaptureVideoDataOutputSampleBufferDelega
         return calculatedCheckDigit == providedCheckDigit
     }
 
-    private func parseMrzTd3(line1: String, line2: String) -> [String: Any]? {
+    internal func parseMrzTd3(line1: String, line2: String) -> [String: Any]? {
         // TD3 format: 2 lines, 44 characters each
         guard line1.count == 44, line2.count == 44 else { return nil }
         

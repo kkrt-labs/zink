@@ -19,5 +19,13 @@ Pod::Spec.new do |s|
     'DEFINES_MODULE' => 'YES',
   }
 
-  s.source_files = "**/*.{h,m,mm,swift,hpp,cpp}"
+  s.source_files = "{*.{h,m,mm,swift,hpp,cpp}}"
+
+  s.test_spec do |ts|
+    ts.name = 'MrzReaderTests'
+    # Assuming the podspec is in 'modules/mrz-reader/ios/',
+    # the path to tests would be 'Tests/**/*.swift'
+    ts.source_files = 'Tests/**/*.swift'
+    # ts.dependency 'ExpoModulesCore' # Uncomment if tests specifically need it beyond what main spec provides
+  end
 end
