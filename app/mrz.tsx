@@ -8,7 +8,7 @@ export default function MRZScannerPage() {
     // For example, display it in an alert or navigate to another screen.
     Alert.alert(
       "MRZ Scanned",
-      `Raw MRZ: ${nativeEvent.raw}\nLine 1: ${nativeEvent.line1}\nLine 2: ${nativeEvent.line2}`,
+      `Raw MRZ: ${JSON.stringify(nativeEvent, null, 2)}`,
     );
   };
 
