@@ -19,6 +19,7 @@
     "@react-navigation/native": "^7.1.6",
     "expo": "~53.0.9",
     "expo-blur": "~14.1.4",
+    "expo-camera": "~16.1.6",
     "expo-constants": "~17.1.6",
     "expo-dev-client": "~5.1.8",
     "expo-font": "~13.3.1",
@@ -36,10 +37,8 @@
     "react-dom": "19.0.0",
     "react-native": "0.79.2",
     "react-native-gesture-handler": "~2.24.0",
-    "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.10.0",
-    "react-native-vision-camera": "^4.6.4",
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5"
   },
