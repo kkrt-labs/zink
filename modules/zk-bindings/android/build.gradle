@@ -32,7 +32,9 @@ if (useManagedAndroidSdkVersions) {
 }
 
 dependencies {
-  implementation "net.java.dev.jna:jna:5.13.0@aar"
+  implementation "net.java.dev.jna:jna:5.17.0@aar", {
+    exclude group: "org.bouncycastle", module: "bcprov-jdk15on"
+  }
 }
 
 android {

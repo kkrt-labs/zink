@@ -34,7 +34,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "org.kakarot.zink",
-      "permissions": ["android.permission.CAMERA"]
+      "permissions": ["android.permission.CAMERA", "android.permission.NFC"]
     },
     "web": {
       "bundler": "metro",
@@ -57,7 +57,8 @@
         {
           "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera"
         }
-      ]
+      ],
+      "./plugins/withBcprovExclusion.js"
     ],
     "experiments": {
       "typedRoutes": true
