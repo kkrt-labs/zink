@@ -16,16 +16,17 @@ export default function MRZScannerPage() {
   const [hasNavigated, setHasNavigated] = useState(false);
 
   const handleMrzExtracted = ({ nativeEvent }: { nativeEvent: MrzData }) => {
-    if (hasNavigated) return;
-    setHasNavigated(true);
-    router.push({
-      pathname: "../nfc",
-      params: {
-        documentNo: nativeEvent.documentNumber,
-        expiryDate: nativeEvent.expiryDate,
-        birthDate: nativeEvent.dateOfBirth,
-      },
-    });
+    if (!hasNavigated) {
+      setHasNavigated(true);
+      router.push({
+        pathname: "../nfc",
+        params: {
+          documentNo: nativeEvent.documentNumber,
+          expiryDate: nativeEvent.expiryDate,
+          birthDate: nativeEvent.dateOfBirth,
+        },
+      });
+    }
   };
 
   const handleMrzError = ({

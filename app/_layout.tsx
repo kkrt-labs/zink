@@ -9,7 +9,13 @@ const queryClient = new QueryClient();
 export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Stack />
+      <Stack
+        screenOptions={{
+          headerBackButtonDisplayMode: "minimal",
+          headerTitle: "",
+          headerTransparent: true,
+        }}
+      />
     </QueryClientProvider>
   );
 }

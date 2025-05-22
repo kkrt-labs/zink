@@ -157,12 +157,6 @@ export default function NfcScreen() {
             {startReading.isPending ? "Scanning..." : "Scan Passport"}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.button, styles.secondaryButton]}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.buttonText}>Back</Text>
-        </TouchableOpacity>
       </View>
 
       {isScanning && (
