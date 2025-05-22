@@ -15,7 +15,16 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "Allow access to your photo library",
-        "NSCameraUsageDescription": "Allow access to your camera"
+        "NSCameraUsageDescription": "Allow access to your camera",
+        "NFCReaderUsageDescription": "This app uses NFC to read your passport information.",
+        "com.apple.developer.nfc.readersession.iso7816.select-identifiers": [
+          "A0000002471001", // eMRTD
+          "D4100000030001", // eID (often on same chip)
+          "00000000000000"
+        ]
+      },
+      "entitlements": {
+        "com.apple.developer.nfc.readersession.formats": ["TAG", "NDEF"]
       }
     },
     "android": {
