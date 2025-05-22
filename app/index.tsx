@@ -10,7 +10,9 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      <Link href="/mrz">Scan your passport</Link>
+      <Link prefetch href="/mrz">
+        Scan your passport
+      </Link>
     </View>
   );
 }
