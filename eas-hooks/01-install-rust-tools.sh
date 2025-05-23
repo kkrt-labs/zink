@@ -6,7 +6,7 @@ echo "Installing Rust and required tools for EAS Build..."
 # Install Rust if not present (EAS images might already have it)
 if ! command -v rustc &> /dev/null; then
     echo "Rust not found, installing..."
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly
     # Add cargo to PATH for this script session and subsequent processes in the same job if possible
     # Sourcing .cargo/env is the standard way
     if [ -f "$HOME/.cargo/env" ]; then

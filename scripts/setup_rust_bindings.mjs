@@ -225,8 +225,7 @@ async function setupAndroidPlatform(rustTarget) {
     "cargo",
     [
       "run",
-      "--features=uniffi/cli",
-      "--bin",
+      "--package",
       "uniffi-bindgen",
       "generate",
       "--library",
@@ -300,8 +299,7 @@ async function setupIOSPlatform(rustTarget) {
     "cargo",
     [
       "run",
-      "--features=uniffi/cli",
-      "--bin",
+      "--package",
       "uniffi-bindgen",
       "generate",
       "--library",
