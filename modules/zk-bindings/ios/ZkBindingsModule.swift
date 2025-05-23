@@ -18,12 +18,6 @@ public class ZkBindingsModule: Module {
     // Defines event names that the module can send to JavaScript.
     Events("onChange")
 
-    // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
-    Function("hello") {
-      let result = add(left: 1, right: 2)
-      return "Hello world! 👋 \(result)"
-    }
-
     // Defines a JavaScript function that always returns a Promise and whose native code
     // is by default dispatched on the different thread than the JavaScript runtime runs on.
     AsyncFunction("setValueAsync") { (value: String) in
@@ -31,6 +25,35 @@ public class ZkBindingsModule: Module {
       self.sendEvent("onChange", [
         "value": value
       ])
+    }
+
+    AsyncFunction("generateAndVerifyProof") { (circuitJsonStr: String, inputJsonStr: String) in
+      do {
+        try generateAndVerifyProof(circuitJsonStr: circuitJsonStr, inputJsonStr: inputJsonStr)
+      } catch {
+        throw NSError(domain: "ZkBindings", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to generate and verify proof: \(error.localizedDescription)"])
+      }
+    }
+
+    AsyncFunction("generateProof") { (circuitJsonStr: String, inputJsonStr: String) -> [String: Any] in
+      do {
+        let proof = try generateProof(circuitJsonStr: circuitJsonStr, inputJsonStr: inputJsonStr)
+        return ["proofData": proof.proofData]
+      } catch {
+        throw NSError(domain: "ZkBindings", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to generate proof: \(error.localizedDescription)"])
+      }
+    }
+
+    AsyncFunction("verifyProof") { (circuitJsonStr: String, proof: [String: Any]) in
+      do {
+        guard let proofData = proof["proofData"] as? String else {
+          throw NSError(domain: "ZkBindings", code: 3, userInfo: [NSLocalizedDescriptionKey: "Invalid proof format"])
+        }
+        let proofWrapper = NoirProofWrapper(proofData: proofData)
+        try verifyProof(circuitJsonStr: circuitJsonStr, proof: proofWrapper)
+      } catch {
+        throw NSError(domain: "ZkBindings", code: 4, userInfo: [NSLocalizedDescriptionKey: "Failed to verify proof: \(error.localizedDescription)"])
+      }
     }
 
     // Enables the module to be used as a native view. Definition components that are accepted as part of the
