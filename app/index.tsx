@@ -1,6 +1,5 @@
 import { Link } from "expo-router";
-import { Text, View } from "react-native";
-import ZkBindings from "zk-bindings";
+import { View } from "react-native";
 
 export default function Index() {
   return (
@@ -11,9 +10,9 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      <Text>Salut Kakarot</Text>
-      <Text>{ZkBindings.hello()}</Text>
-      <Link href="/mrz">Scan your passport</Link>
+      <Link prefetch href="/mrz">
+        Scan your passport
+      </Link>
     </View>
   );
 }

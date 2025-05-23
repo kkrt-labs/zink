@@ -153,3 +153,7 @@ reports/
 .eas/build-configuration-cache/
 
 *.apk
+*.ipa
+
+/modules/*/android/.gradle/
+/modules/*/android/local.properties
