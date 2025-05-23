@@ -58,6 +58,8 @@
           "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera"
         }
       ],
+      // This is a workaround to fix duplicate bcprov-jdk15on dependency
+      // https://stackoverflow.com/questions/77962634/duplicate-bouncycastle-classes-using-expo-dev-client-and-expo-updates/78935333
       "./plugins/withBcprovExclusion.js"
     ],
     "experiments": {

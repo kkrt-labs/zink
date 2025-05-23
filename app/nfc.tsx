@@ -46,9 +46,7 @@ export default function NfcScreen() {
       if (!enabled) {
         Alert.alert(
           "NFC Disabled",
-          Platform.OS === "android"
-            ? "Please enable NFC in your device settings."
-            : "Please enable NFC in your iPhone's Settings.",
+          "Please enable NFC in your device settings.",
           Platform.OS === "android"
             ? [
                 {
