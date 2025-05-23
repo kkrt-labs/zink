@@ -102,6 +102,16 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
             ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
                     PackageManager.PERMISSION_GRANTED
 
+    override fun requestLayout() {
+        super.requestLayout()
+        // Manually trigger measure & layout, as RN on Android skips those.
+        // See this issue: https://github.com/facebook/react-native/issues/17968#issuecomment-721958427
+        post {
+            measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY))
+            layout(left, top, right, bottom)
+        }
+    }
+
     private fun startCameraWithLifecycle(lifecycleOwner: LifecycleOwner) {
         if (isCameraStartedAndBound.get()) {
             Log.d(TAG, "startCameraWithLifecycle: Camera already bound. Bailing.")
@@ -163,43 +173,70 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
             return
         }
 
-        previewUseCase =
-                Preview.Builder().setTargetAspectRatio(AspectRatio.RATIO_16_9).build().also {
-                    it.setSurfaceProvider(previewView.surfaceProvider)
-                    Log.d(TAG, "bindUseCases: Preview use case created and surface provider set.")
+        // Ensure PreviewView is properly laid out before proceeding
+        if (previewView.width == 0 || previewView.height == 0) {
+            Log.d(TAG, "bindUseCases: PreviewView not yet laid out, waiting for layout.")
+            previewView.post {
+                if (previewView.width > 0 && previewView.height > 0) {
+                    Log.d(
+                            TAG,
+                            "bindUseCases: PreviewView now laid out (${previewView.width}x${previewView.height}), proceeding."
+                    )
+                    bindUseCasesInternal()
+                } else {
+                    Log.w(TAG, "bindUseCases: PreviewView still not laid out after post.")
+                    isCameraSetupInProgress.set(false)
                 }
+            }
+            return
+        }
 
-        imageAnalysisUseCase =
-                ImageAnalysis.Builder()
-                        .setTargetAspectRatio(AspectRatio.RATIO_16_9)
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
-                        .build()
-                        .also {
-                            Log.d(TAG, "bindUseCases: ImageAnalysis use case created.")
-                            it.setAnalyzer(cameraExecutor, mrzImageAnalyzerInstance)
-                        }
+        bindUseCasesInternal()
+    }
+
+    private fun bindUseCasesInternal() {
+        val provider = cameraProvider ?: return
+        val owner = this.currentLifecycleOwner ?: return
+
+        previewUseCase = Preview.Builder()
+            .setTargetAspectRatio(AspectRatio.RATIO_16_9)
+            .build()
+            .also {
+                // Set surface provider BEFORE binding - this is crucial
+                it.setSurfaceProvider(previewView.surfaceProvider)
+                Log.d(TAG, "bindUseCasesInternal: Preview use case created and surface provider set.")
+            }
+
+        imageAnalysisUseCase = ImageAnalysis.Builder()
+            .setTargetAspectRatio(AspectRatio.RATIO_16_9)
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
+            .build()
+            .also {
+                Log.d(TAG, "bindUseCasesInternal: ImageAnalysis use case created.")
+                it.setAnalyzer(cameraExecutor, mrzImageAnalyzerInstance)
+            }
 
         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
         try {
-            Log.d(TAG, "bindUseCases: Unbinding all previous use cases.")
+            Log.d(TAG, "bindUseCasesInternal: Unbinding all previous use cases.")
             provider.unbindAll()
-            Log.d(TAG, "bindUseCases: Attempting to bind Preview and ImageAnalysis use cases.")
-            camera =
-                    provider.bindToLifecycle(
-                            owner,
-                            cameraSelector,
-                            previewUseCase,
-                            imageAnalysisUseCase
-                    )
-            Log.d(
-                    TAG,
-                    "bindUseCases: Use cases bound successfully. CameraState: ${camera?.cameraInfo?.cameraState?.value}"
+
+            Log.d(TAG, "bindUseCasesInternal: Attempting to bind Preview and ImageAnalysis use cases.")
+            camera = provider.bindToLifecycle(
+                owner,
+                cameraSelector,
+                previewUseCase,
+                imageAnalysisUseCase
             )
+
+            Log.d(TAG, "bindUseCasesInternal: Use cases bound successfully. CameraState: ${camera?.cameraInfo?.cameraState?.value}")
             isCameraStartedAndBound.set(true)
-            triggerAutoFocus()
+
+            // Delay auto-focus to ensure camera is fully ready
+            previewView.post { triggerAutoFocus() }
         } catch (exc: Exception) {
-            Log.e(TAG, "bindUseCases: Binding failed", exc)
+            Log.e(TAG, "bindUseCasesInternal: Binding failed", exc)
             reportError("BINDING_FAILED", "Camera binding failed", exc)
             isCameraStartedAndBound.set(false)
         } finally {
@@ -711,5 +748,25 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
     // implementation.
     private fun cleanMrzString(input: String): String {
         return input.replace("[^A-Z0-9<]".toRegex(), "").uppercase()
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        if (changed) {
+            Log.d(TAG, "onLayout: PreviewView size changed to ${right - left}x${bottom - top}")
+            // If camera setup was pending due to layout, retry now
+            if (!isCameraStartedAndBound.get() &&
+                            !isCameraSetupInProgress.get() &&
+                            allPermissionsGranted() &&
+                            isAttachedToWindow
+            ) {
+                currentLifecycleOwner?.let { owner ->
+                    if (owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                        Log.d(TAG, "onLayout: Retrying camera setup after layout change.")
+                        startCameraWithLifecycle(owner)
+                    }
+                }
+            }
+        }
     }
 }

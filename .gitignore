@@ -154,3 +154,6 @@ reports/
 
 *.apk
 *.ipa
+
+/modules/*/android/.gradle/
+/modules/*/android/local.properties
