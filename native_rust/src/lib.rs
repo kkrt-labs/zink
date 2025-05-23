@@ -34,12 +34,13 @@ pub struct NoirProofWrapper {
 }
 
 impl NoirProofWrapper {
+    /// Serialize a given NoirProof to a string.
     fn new(proof: NoirProof) -> Self {
-        // Serialize the proof to a string
         let proof_data = serde_json::to_string(&proof).expect("Failed to serialize NoirProof");
         Self { proof_data }
     }
 
+    /// Deserialize a NoirProof.
     fn into_proof(&self) -> Result<NoirProof, NoirProverError> {
         // Deserialize the proof from the string
         serde_json::from_str(&self.proof_data)
@@ -68,8 +69,8 @@ impl NoirProver {
         Ok(Self { proof_scheme, program })
     }
 
-    /// Generates a proof of the loaded Noir circuit, with the given witnesses stored in a gzip
-    /// file. file.
+    /// Generates a proof of the loaded Noir circuit, for the given inputs.
+    /// * `input_json_str` - The circuit inputs in a JSON format as a string.
     pub fn prove(&self, input_json_str: &String) -> Result<NoirProofWrapper, NoirProverError> {
         let (input_map, _expected_return_value) = self.generate_witness_map(input_json_str)?;
         let initial_witness = self
@@ -96,6 +97,9 @@ impl NoirProver {
         Ok(NoirProofWrapper::new(proof))
     }
 
+    /// Generate the ACIR witness map expected by the `ProveKit::prove` function from the input JSON
+    /// string.
+    /// * `input_json_str` - The circuit inputs in a JSON format as a string.
     fn generate_witness_map(
         &self,
         input_json_str: &String,
@@ -125,6 +129,7 @@ impl NoirProver {
     }
 
     /// Verify a given Noir proof for the current circuit proof scheme.
+    /// * `proof` - The ProveKit's Spartan WHIR Noir proof to be verified.
     pub fn verify(&self, proof: &NoirProofWrapper) -> Result<(), NoirProverError> {
         let proof = proof.into_proof()?;
         self.proof_scheme
@@ -148,7 +153,7 @@ pub fn generate_proof(
 
 /// Verify a Noir proof, given the circuit to verify against.
 /// * `circuit_json_str` - The compiled Noir circuit JSON as a string.
-/// * `proof` - The Noir proof to be verified.
+/// * `proof` - The ProveKit's Spartan WHIR Noir proof to be verified.
 #[uniffi::export]
 pub fn verify_proof(
     circuit_json_str: &String,
