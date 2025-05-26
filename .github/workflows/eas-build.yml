@@ -14,6 +14,8 @@ jobs:
   android_build:
     name: Android Local Build (Preview)
     runs-on: linux-arm-medium
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
     steps:
       - name: Checkout code
@@ -43,6 +45,8 @@ jobs:
   ios_simulator_build:
     name: iOS Simulator Local Build (Preview)
     runs-on: linux-arm-medium
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
     steps:
       - name: Checkout code
