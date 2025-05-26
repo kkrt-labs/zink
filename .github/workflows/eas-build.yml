@@ -42,7 +42,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-preview
+          name: app-preview-android
           path: ${{ github.workspace }}/app-release.apk
 
       - name: Indicate Android Build Success
@@ -80,5 +80,5 @@ jobs:
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-preview
+          name: app-preview-ios
           path: ${{ github.workspace }}/app-release.ipa
