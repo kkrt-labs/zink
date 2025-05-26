@@ -1,123 +1,155 @@
-# Welcome to your Expo app 👋
+# Zink: Programmable Credentials MVP
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-## Get started
+[![Status](https://img.shields.io/badge/status-work_in_progress-red.svg)](https://github.com/kkrt-labs)
 
-1. Install dependencies
+Welcome to Zink! This project is a Minimum Viable Product (MVP) aiming to explore and demonstrate **Programmable Credentials**.
 
-   ```bash
-   npm install
-   ```
+## ⚠️ IMPORTANT DISCLAIMER: WORK IN PROGRESS ⚠️
 
-2. Start the app
+This project is currently in a very early Work-In-Progress (WIP) state.
 
-   ```bash
-   npx expo start
-   ```
+- It is **not yet fully functional** for all intended real-world use cases.
+- It has **not been audited** for security, correctness, or privacy.
+- The codebase is subject to significant changes, refactoring, or even complete overhauls without notice.
 
-In the output, you'll find options to open the app in a
+Please use it for learning, experimentation, or contribution purposes only. **Do not use it in production or with sensitive data.**
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
+## Project Goal
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Our primary goal is to build an MVP that showcases the potential of programmable credentials. We aim to combine the power of zero-knowledge proofs with a mobile-first approach to push the frontier for privacy-preserving programmable credentials.
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Technology Stack
 
-### Setting Up the Pre-Push Hook
+Zink is built with a state-of-the-art, cross-platform, and privacy-focused stack:
 
-To ensure builds pass before pushing, install the pre-push hook:
+- **Zero-Knowledge Proofs:**
+  - **Noir:** [A Domain Specific Language](https://noir-lang.org/docs) for writing zero-knowledge circuits. (Example circuit in `assets/noir/`)
+  - **ProveKit (Rust Backend):** Utilizes `noir-r1cs` from [ProveKit](https://github.com/worldfnd/ProveKit) for generating and verifying proofs with Noir circuits.
+- **Native Integration & Core Logic:**
+  - **Rust Library (Nightly Toolchain):** For implementing core ZK logic, cryptographic operations, and performance-sensitive components. Reuses Noir & ProveKit libraries.
+  - **UniFFI:** For generating seamless, [type-safe bindings](https://github.com/mozilla/uniffi-rs) between Rust and mobile native languages (Kotlin for Android, Swift for iOS).
+- **Mobile Application:**
+  - **React Native:** For building the cross-platform user interface.
+  - **Expo (ejected):** To streamline development, building, and iteration, specifically utilizing:
+    - **Expo Development Builds:** For a robust native development experience allowing custom native code.
+    - **Expo Native Modules:** For integrating our Rust/UniFFI powered `zk-bindings` (for ZK operations) as well as native code, e.g. `mrz-reader` (for passport scanning) modules.
+  - **Expo Router:** For file-based routing within the app.
+  - **@tanstack/react-query:** For managing asynchronous state and server interactions.
 
-```bash
-cp scripts/pre-push.sh .git/hooks/pre-push
-chmod +x .git/hooks/pre-push
-```
+## Features (Current MVP State)
 
-## Setup and Building Native Bindings
+- **Passport MRZ Scanning:** Uses the device camera to scan the Machine Readable Zone (MRZ) of passports.
+- **NFC Passport Reading:** Reads data from ePassports using NFC after obtaining MRZ details.
+- **ZK Proof Generation & Verification:** Generating and verifying proofs using the integrated Rust ZK backend. This can be tested via the "Proof Generation" screen.
 
-This project uses a Rust library (`native_rust`) integrated via UniFFI. The native bindings (Kotlin for Android, Swift for iOS) are generated and copied into the `zk-bindings` Expo module.
+## Getting Started
 
-### Using the Setup Script (`setup_rust_bindings.mjs`)
+### Prerequisites
 
-A Node.js script is provided to automate the Rust compilation, binding generation, and file copying process.
-
-1.  **Run the script from the project root:**
-
+1.  **Node.js & npm:** Install Node.js (LTS version recommended, e.g., 18.x or later) and npm.
+2.  **Rust (Nightly Toolchain):** Install Rust via [rustup](https://rustup.rs/).
+    - The project uses the **nightly** toolchain for Rust. The `native_rust/rust-toolchain.toml` file will typically set this up for you automatically when you `cd` into the `native_rust` directory or run cargo commands from the root.
+    - If not, ensure your default toolchain is nightly or run `rustup override set nightly` in the `native_rust` directory.
+3.  **Expo CLI:** Install the Expo CLI: `npm install -g expo-cli`.
+4.  **Platform-Specific Tooling:**
+    - **Android:** Android Studio (for SDK, emulator, and build tools).
+    - **iOS:** Xcode (for SDK, simulator, and build tools) and CocoaPods (`sudo gem install cocoapods`).
+5.  **Rust Targets:** Install the necessary targets for cross-compilation:
     ```bash
-    node scripts/setup_rust_bindings.mjs [options]
+    rustup target add aarch64-linux-android
+    rustup target add aarch64-apple-ios
+    rustup target add aarch64-apple-ios-sim
+    ```
+6.  **`cargo-ndk`:** For Android Rust builds:
+    ```bash
+    cargo install cargo-ndk
     ```
 
-    **Available Options:**
+### Setup and Running the App
 
-    - `--all`: Build for Android (default arch: `aarch64-linux-android`) and iOS Simulator (default arch: `aarch64-apple-ios-sim`). This is the **default behavior** if no specific platform flags are provided.
-    - `--android`: Build for Android only.
-    - `--ios-sim`: Build for iOS Simulator only.
-    - `--ios-device`: Build for iOS Device only (default arch: `aarch64-apple-ios`).
-      - **Note**: If building for both device and simulator, be aware that `libnative_rust.a` might be overwritten.
-    - `--help` or `-h`: Display help information.
+1.  **Clone the repository:**
 
-    **Example Usage:**
+    ```bash
+    git clone https://github.com/kkrt-labs/zink.git
+    cd zink
+    ```
 
-    - Build for all default platforms (Android arm64, iOS Simulator arm64):
-      ```bash
-      node scripts/setup_rust_bindings.mjs
-      # or
-      node scripts/setup_rust_bindings.mjs --all
-      ```
-    - Build for Android only:
-      ```bash
-      node scripts/setup_rust_bindings.mjs --android
-      ```
-    - Build for iOS Simulator and iOS Device:
-      ```bash
-      node scripts/setup_rust_bindings.mjs --ios-sim --ios-device
-      ```
-
-The script will:
-
-- Check for necessary prerequisites (Rust targets, cargo-ndk, pod).
-- Compile the Rust code in `/native_rust` for the specified platforms/architectures.
-- Generate Kotlin and Swift bindings using UniFFI.
-- Copy the compiled libraries (`.so` for Android, `.a` for iOS) and the generated bindings to the `/modules/zk-bindings` directory.
-- Run `pod install` for iOS if any iOS platform was processed.
-
-**When to re-run the script:**
-You should re-run this script whenever you make changes to:
-
-- The Rust code in `/native_rust/src/lib.rs`.
-- The UniFFI definition file `/native_rust/src/math.udl`.
-
-### Initial Project Setup (One-time)
-
-If this is the first time setting up the project or if you've cleaned the native directories:
-
-1.  **Install JavaScript dependencies:**
+2.  **Install JavaScript dependencies:**
 
     ```bash
     npm install
-
     ```
 
-2.  **Generate native platform projects (if not already present):**
-    This step creates the `/ios` and `/android` directories at the project root, which are necessary for custom native code.
+3.  **Generate Native Bindings:**
+    This step compiles the Rust code in `native_rust/` (for ZK bindings) and prepares the native modules (`zk-bindings`, `mrz-reader`).
+    ⚠️ Running `npm run generate-bindings` will generate ios bindings simulator, not for device. For ios devices, run `node scripts/setup_rust_bindings.mjs --ios-device`
+
     ```bash
-    npx expo prebuild --clean
+    npm run generate-bindings
+    # or specifically:
+    # node scripts/setup_rust_bindings.mjs --all
     ```
-    - **Android Note**: If `npx expo run:android` fails after prebuild with Gradle issues, opening the `./android` project in Android Studio once can often resolve these by allowing it to sync and set up correctly.
-3.  **Run the `setup_rust_bindings.mjs` script** as described above to build and integrate the Rust code (e.g., `node scripts/setup_rust_bindings.mjs --all` or alternatively `npm run generate-bindings`).
 
-## Learn more
+    _You'll need to re-run this command whenever you make changes to the Rust code in `native_rust/src/lib.rs`._
 
-To learn more about developing your project with Expo, look at the following resources:
+4.  **Run the app:**
+    - **For Android:**
+      ```bash
+      npx expo run:android
+      ```
+    - **For iOS:**
+      ```bash
+      npx expo run:ios
+      ```
+    - **For Web (Native modules like `zk-bindings` and `mrz-reader` will have limited or no functionality):**
+      ```bash
+      npx expo start --web
+      ```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+#### Caveats
 
-## Join the community
+- `npx expo run:ios` or `npx expo run:android` may fail for unknown reasons, try running `npm run generate-bindings` and `npx expo prebuild --clean` before-hand in that case.
+- `npx expo prebuild --clean` might fail, in that case, try a local eas build: `eas build --platform android --profile development  --local` or `eas build --platform ios --profile development --local`. Make sure to run the command with the `--local`. You'll then have to upload the `.apk` or `.ipa` resulting files to a mobile device. For that, consider using [Expo Orbit](https://github.com/expo/orbit).
 
-Join our community of developers creating universal apps.
+**Notes on Native Builds:**
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- The `generate-bindings` script (which calls `setup_rust_bindings.mjs`) handles compiling Rust, generating Swift/Kotlin bindings, and placing them into the `modules/zk-bindings/` directory. It also runs `pod install` for iOS.
+- If you encounter issues with native builds for the first time, ensure your Android Studio / Xcode setups are correct. Sometimes, opening the `android/` project in Android Studio or the `ios/` project in Xcode once can help resolve initial setup or dependency issues.
+- The `mrz-reader` module contains native code for camera access and MRZ parsing. The `zk-bindings` module is for the Rust-based ZK functionalities.
+
+## Project Structure Highlights
+
+- `app/`: Contains the React Native screens and navigation logic (using Expo Router).
+  - `proof.tsx`: Screen for demonstrating ZK proof generation and verification.
+- `assets/`: Static assets.
+  - `noir/poseidon-example.json`: A sample compiled Noir circuit.
+- `modules/`: Houses local Expo Native Modules.
+  - `mrz-reader/`: Native module for MRZ (Machine Readable Zone) scanning from documents.
+  - `zk-bindings/`: Native module bridging Rust ZK logic to JavaScript via UniFFI.
+- `native_rust/`: The Rust crate containing the core logic for ZK operations and other native utilities.
+  - `src/lib.rs`: Main Rust library code.
+  - `Cargo.toml`: Rust project dependencies and configuration (uses `edition = "2021"` for compilation, though `rustfmt.toml` uses `2024` for styling).
+  - `rust-toolchain.toml`: Specifies the Rust nightly toolchain.
+- `scripts/`: Contains helper scripts, including `setup_rust_bindings.mjs` for building and integrating Rust code.
+- `eas-hooks/`: Scripts used during EAS Build to set up the Rust environment.
+
+## Contributing
+
+We welcome contributions! As this is an early-stage project, there are many areas to contribute, from core ZK logic and circuit design to UI/UX improvements and documentation.
+
+Please feel free to:
+
+- Open issues for bugs, feature requests, or questions.
+- Submit pull requests with improvements (please discuss significant changes in an issue first, especially for architectural decisions).
+
+_More detailed contribution guidelines will be added as the project matures._
+
+## License
+
+This project is licensed under the **Apache License 2.0**. See the [LICENSE](LICENSE) file for the full license text.
+
+---
+
+_This README is a living document and will be updated as the project evolves._
