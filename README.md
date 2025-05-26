@@ -49,7 +49,7 @@ Zink is built with a state-of-the-art, cross-platform, and privacy-focused stack
 ### Prerequisites
 
 1.  **Node.js & npm:** Install [Node.js](https://nodejs.org/en/download) (LTS version recommended, e.g., 18.x or later) and npm.
-2.  **Rust (Nightly Toolchain):** Install Rust (https://www.rust-lang.org/tools/install).
+2.  **Rust (Nightly Toolchain):** Install [Rust](https://www.rust-lang.org/tools/install).
 
     - The project uses the **nightly** toolchain for Rust. The `native_rust/rust-toolchain.toml` file will typically set this up for you automatically when you `cd` into the `native_rust` directory or run cargo commands from the root (`cargo +nightly <build or run>`).
 
