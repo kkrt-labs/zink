@@ -27,7 +27,7 @@ lint:
     - osv-scanner@2.0.2
     - oxipng@9.1.5
     - prettier@3.5.3
-    - trufflehog@3.88.33
+    - trufflehog@3.88.34
 actions:
   disabled:
     - trunk-announce

@@ -15,12 +15,14 @@ if ! command -v rustc &> /dev/null; then
         export PATH="$HOME/.cargo/bin:$PATH"
     fi
 else
-    echo "Rust is already installed."
+    echo "Rust is already installed - Installing latest nightly."
     # Ensure cargo is in PATH if Rust was pre-installed
     if ! command -v cargo &> /dev/null && [ -d "$HOME/.cargo/bin" ]; then
         export PATH="$HOME/.cargo/bin:$PATH"
         source "$HOME/.cargo/env" # Try sourcing again
     fi
+    rustup update nightly
+    rustup default nightly
 fi
 
 echo "Rust version: $(rustc --version || echo 'rustc not found')"
