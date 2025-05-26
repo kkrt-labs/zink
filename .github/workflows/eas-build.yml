@@ -14,7 +14,7 @@ on:
 jobs:
   android_build:
     name: Android Local Build (Preview)
-    runs-on: linux-arm-medium
+    runs-on: macos-15
 
     steps:
       - name: Checkout code
@@ -25,17 +25,6 @@ jobs:
         with:
           node-version: 18
           cache: "npm"
-
-      - name: Setup JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: "17"
-          distribution: "temurin"
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: "platform-tools"
 
       - name: Setup Expo
         uses: expo/expo-github-action@v8
@@ -61,7 +50,7 @@ jobs:
 
   ios_simulator_build:
     name: iOS Simulator Local Build (Preview)
-    runs-on: macos-latest
+    runs-on: macos-15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
