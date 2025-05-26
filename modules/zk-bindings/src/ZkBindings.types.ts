@@ -17,3 +17,7 @@ export type ZkBindingsViewProps = {
   onLoad: (event: { nativeEvent: OnLoadEventPayload }) => void;
   style?: StyleProp<ViewStyle>;
 };
+
+export type NoirProofWrapper = {
+  proofData: string;
+};

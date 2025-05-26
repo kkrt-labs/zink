@@ -1,5 +1,5 @@
-import { Link } from "expo-router";
-import { View } from "react-native";
+import { router } from "expo-router";
+import { Button, Text, View } from "react-native";
 
 export default function Index() {
   return (
@@ -8,11 +8,19 @@ export default function Index() {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
+        gap: 20,
+        padding: 20,
       }}
     >
-      <Link prefetch href="/mrz">
-        Scan your passport
-      </Link>
+      <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 20 }}>Welcome to Zink</Text>
+      <Button
+        title="Go to Proof Generation"
+        onPress={() => router.push("/proof")}
+      />
+      <Button
+        title="Scan your passport"
+        onPress={() => router.push("/mrz")}
+      />
     </View>
   );
 }
