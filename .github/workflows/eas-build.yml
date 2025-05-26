@@ -6,6 +6,11 @@ name: Local EAS Build PR Check
 permissions:
   contents: read
 
+# Add concurrency to cancel previous runs
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 on:
   pull_request:
     branches:
