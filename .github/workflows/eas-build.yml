@@ -59,8 +59,7 @@ jobs:
 
   ios_simulator_build:
     name: iOS Simulator Local Build (Preview)
-    runs-on: linux-arm-medium
-
+    runs-on: macos-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
