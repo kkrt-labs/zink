@@ -1,4 +1,5 @@
-# .github/workflows/local-eas-build.yml
+# .github/workflows/eas-build.yml
+# Thank you to https://github.com/thomasread99/expo-workflows for the inspiration!
 
 name: Local EAS Build PR Check
 
@@ -14,8 +15,6 @@ jobs:
   android_build:
     name: Android Local Build (Preview)
     runs-on: linux-arm-medium
-    env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
     steps:
       - name: Checkout code
@@ -27,17 +26,33 @@ jobs:
           node-version: 18
           cache: "npm"
 
-      - name: Install EAS CLI
-        run: npm install -g eas-cli
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
 
-      - name: Install Project Dependencies
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
         run: npm ci
 
       - name: Run EAS Local Android Build (Preview Profile)
-        # eas build --local will automatically trigger your eas-build-pre-install
-        # and eas-build-post-install hooks defined in package.json.
-        # It will handle Rust tool installation and bindings generation.
-        run: eas build --local --platform android --profile preview --non-interactive
+        run: eas build --local --platform android --profile preview --non-interactive --output ${{ github.workspace }}/app-release.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-preview
+          path: ${{ github.workspace }}/app-release.apk
 
       - name: Indicate Android Build Success
         run: echo "✅ Android local build successful!"
@@ -45,8 +60,6 @@ jobs:
   ios_simulator_build:
     name: iOS Simulator Local Build (Preview)
     runs-on: linux-arm-medium
-    env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
     steps:
       - name: Checkout code
@@ -58,14 +71,24 @@ jobs:
           node-version: 18
           cache: "npm"
 
-      - name: Install EAS CLI
-        run: npm install -g eas-cli
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install Project Dependencies
         run: npm ci
 
       - name: Run EAS Local iOS Build (Preview Profile)
-        run: eas build --local --platform ios --profile preview --non-interactive
+        run: eas build --local --platform ios --profile preview --non-interactive --output ${{ github.workspace }}/app-release.ipa
 
       - name: Indicate iOS Build Success
         run: echo "✅ iOS (device) local build successful!"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-preview
+          path: ${{ github.workspace }}/app-release.ipa
