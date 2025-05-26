@@ -48,14 +48,13 @@ Zink is built with a state-of-the-art, cross-platform, and privacy-focused stack
 
 ### Prerequisites
 
-1.  **Node.js & npm:** Install Node.js (LTS version recommended, e.g., 18.x or later) and npm.
-2.  **Rust (Nightly Toolchain):** Install Rust via [rustup](https://rustup.rs/).
-    - The project uses the **nightly** toolchain for Rust. The `native_rust/rust-toolchain.toml` file will typically set this up for you automatically when you `cd` into the `native_rust` directory or run cargo commands from the root.
-    - If not, ensure your default toolchain is nightly or run `rustup override set nightly` in the `native_rust` directory.
+1.  **Node.js & npm:** Install [Node.js](https://nodejs.org/en/download) (LTS version recommended, e.g., 18.x or later) and npm.
+2.  **Rust (Nightly Toolchain):** Install Rust (https://www.rust-lang.org/tools/install).
+
+    - The project uses the **nightly** toolchain for Rust. The `native_rust/rust-toolchain.toml` file will typically set this up for you automatically when you `cd` into the `native_rust` directory or run cargo commands from the root (`cargo +nightly <build or run>`).
+
 3.  **Expo CLI:** Install the Expo CLI: `npm install -g expo-cli`.
-4.  **Platform-Specific Tooling:**
-    - **Android:** Android Studio (for SDK, emulator, and build tools).
-    - **iOS:** Xcode (for SDK, simulator, and build tools) and CocoaPods (`sudo gem install cocoapods`).
+4.  **Platform-Specific Tooling:** - **Android:** Android Studio (for SDK, emulator, and build tools). - **iOS:** Xcode (for SDK, simulator, and build tools) and CocoaPods (`sudo gem install cocoapods`). [CocoaPods](https://guides.cocoapods.org/using/getting-started.html#installation) recommends not using the MacOS system's version of Ruby, and install it through other means, e.g. homebrew.
 5.  **Rust Targets:** Install the necessary targets for cross-compilation:
     ```bash
     rustup target add aarch64-linux-android
