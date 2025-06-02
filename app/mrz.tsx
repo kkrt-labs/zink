@@ -85,29 +85,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   message: { fontSize: 16, color: "#333", textAlign: "center", margin: 20 },
-  overlay: { flex: 1, justifyContent: "center", alignItems: "center" },
-  overlayText: {
-    color: "white",
-    fontSize: 18,
-    padding: 10,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    borderRadius: 8,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    width: "80%",
-    marginTop: 20,
-  },
   button: {
     backgroundColor: "#007AFF",
     paddingVertical: 12,
     paddingHorizontal: 25,
     borderRadius: 8,
     alignItems: "center",
-    // Adjust width to fit side-by-side or remove if using space-around effectively
-    // width: "45%", // Example: if you want them to take up a specific portion of the buttonContainer
-    marginHorizontal: 5, // Add some horizontal margin between buttons
+    marginHorizontal: 5,
   },
   buttonText: { color: "#fff", fontSize: 16 },
   cancelButton: { backgroundColor: "#FF3B30" },

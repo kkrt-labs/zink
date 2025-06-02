@@ -13,7 +13,7 @@ export default function RootLayout() {
         screenOptions={{
           headerBackButtonDisplayMode: "minimal",
           headerTitle: "",
-          headerTransparent: true,
+          //   headerTransparent: true,
         }}
       />
     </QueryClientProvider>
