@@ -12,14 +12,16 @@ export default function Index() {
         padding: 20,
       }}
     >
-      <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 20 }}>Welcome to Zink</Text>
+      <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 20 }}>
+        Welcome to Zink
+      </Text>
       <Button
         title="Go to Proof Generation"
         onPress={() => router.push("/proof")}
       />
       <Button
-        title="Scan your passport"
-        onPress={() => router.push("/mrz")}
+        title="Start Passport Scan"
+        onPress={() => router.push("/passport-choice")}
       />
     </View>
   );

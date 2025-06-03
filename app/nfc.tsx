@@ -1,69 +1,35 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import NfcReader from "@modules/nfc-reader/src";
+import { useMutation } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as React from "react";
 import {
-  ActivityIndicator,
   Alert,
-  Platform,
   SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import NfcPassportReader from "react-native-nfc-passport-reader";
+import { PassportData, PassportDataView } from "../components/passport-data";
 
 export default function NfcScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
     documentNo?: string;
-    expiryDate?: string;
     birthDate?: string;
+    expiryDate?: string;
   }>();
 
   // Validate MRZ data
   const isMrzValid = !!(
     params.documentNo &&
-    params.expiryDate &&
-    params.birthDate
+    params.birthDate &&
+    params.expiryDate
   );
 
-  // State for scanning
-  const [isScanning, setIsScanning] = React.useState(false);
-
-  // Query for NFC status
-  const { data: nfcStatus } = useQuery({
-    queryKey: ["nfcStatus"],
-    queryFn: async () => {
-      const supported = await NfcPassportReader.isNfcSupported();
-      if (!supported) {
-        Alert.alert("NFC Not Supported", "This device does not support NFC.", [
-          { text: "OK", onPress: () => router.push("/") },
-        ]);
-        throw new Error("NFC not supported");
-      }
-      const enabled = await NfcPassportReader.isNfcEnabled();
-      if (!enabled) {
-        Alert.alert(
-          "NFC Disabled",
-          "Please enable NFC in your device settings.",
-          Platform.OS === "android"
-            ? [
-                {
-                  text: "Open Settings",
-                  onPress: async () => {
-                    await NfcPassportReader.openNfcSettings();
-                  },
-                },
-                { text: "Cancel", style: "cancel" },
-              ]
-            : [{ text: "OK" }],
-        );
-      }
-      return { supported, enabled };
-    },
-    enabled: isMrzValid,
-  });
+  const [passportData, setPassportData] = React.useState<PassportData | null>(
+    null,
+  );
 
   // Mutation for starting NFC reading
   const startReading = useMutation({
@@ -71,51 +37,22 @@ export default function NfcScreen() {
       if (!isMrzValid) {
         throw new Error("Cannot start reading: MRZ data is missing");
       }
-      return NfcPassportReader.startReading({
-        bacKey: {
-          documentNo: params.documentNo!,
-          expiryDate: params.expiryDate!,
-          birthDate: params.birthDate!,
-        },
-        includeImages: true,
-      });
+      return NfcReader.scan(
+        params.documentNo!,
+        params.birthDate!,
+        params.expiryDate!,
+      ) as Promise<string>;
     },
-    onMutate: () => setIsScanning(true),
-    onSuccess: () => {
-      setIsScanning(false);
-      Alert.alert("Success", "Passport data has been read.", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+    onSuccess: (data) => {
+      const parsedData = JSON.parse(data) as PassportData;
+      setPassportData(parsedData);
     },
     onError: (error: Error) => {
-      setIsScanning(false);
       if (!error.message.toLowerCase().includes("cancel")) {
         Alert.alert("NFC Read Failed", error.message);
       }
     },
   });
-
-  // Handle cancel (Android stop or iOS dismiss)
-  const handleCancel = () => {
-    if (Platform.OS === "android") {
-      NfcPassportReader.stopReading();
-    }
-    setIsScanning(false);
-  };
-
-  // Setup Android tag listener
-  React.useEffect(() => {
-    if (Platform.OS === "android") {
-      NfcPassportReader.addOnTagDiscoveredListener(() => {
-        console.log("Tag Discovered (Android)");
-        setIsScanning(true);
-      });
-      return () => {
-        NfcPassportReader.stopReading();
-        NfcPassportReader.removeListeners();
-      };
-    }
-  }, []);
 
   if (!isMrzValid) {
     return (
@@ -136,50 +73,36 @@ export default function NfcScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.box}>
-        <TouchableOpacity
-          onPress={() => startReading.mutate()}
-          style={[
-            styles.button,
-            (startReading.isPending ||
-              !nfcStatus?.enabled ||
-              !nfcStatus?.supported) &&
-              styles.buttonDisabled,
-          ]}
-          disabled={
-            startReading.isPending ||
-            !nfcStatus?.enabled ||
-            !nfcStatus?.supported
-          }
-        >
-          <Text style={styles.buttonText}>
-            {startReading.isPending ? "Scanning..." : "Scan Passport"}
+        <View style={styles.paramsBox}>
+          <Text style={styles.paramsTitle}>MRZ Data:</Text>
+          <Text style={styles.paramsText}>
+            Document No: {params.documentNo}
           </Text>
-        </TouchableOpacity>
-      </View>
-
-      {isScanning && (
-        <View style={styles.overlayBox}>
-          <View style={styles.infoBox}>
-            <Text style={styles.infoText}>
-              Scanning...{"\n"}
-              {Platform.OS === "ios"
-                ? "Place the top of your iPhone near the passport."
-                : "Place passport against the back of your phone."}
-            </Text>
-            <ActivityIndicator
-              size="large"
-              color="#007AFF"
-              style={{ marginTop: 20 }}
-            />
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
-              onPress={handleCancel}
-            >
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.paramsText}>Birth Date: {params.birthDate}</Text>
+          <Text style={styles.paramsText}>
+            Expiry Date: {params.expiryDate}
+          </Text>
         </View>
-      )}
+
+        {passportData ? (
+          <View style={styles.passportDataContainer}>
+            <PassportDataView data={passportData} />
+          </View>
+        ) : (
+          <TouchableOpacity
+            onPress={() => startReading.mutate()}
+            style={[
+              styles.button,
+              startReading.isPending && styles.buttonDisabled,
+            ]}
+            disabled={startReading.isPending}
+          >
+            <Text style={styles.buttonText}>
+              {startReading.isPending ? "Scanning..." : "Scan Passport"}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -216,35 +139,22 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   secondaryButton: { backgroundColor: "#5856D6" },
-  cancelButton: { backgroundColor: "#FF3B30", marginTop: 20 },
-  overlayBox: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 100,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    justifyContent: "center",
-    alignItems: "center",
+  paramsBox: {
+    alignItems: "flex-start",
+    width: "100%",
+    marginBottom: 20,
   },
-  infoBox: {
-    borderRadius: 16,
-    padding: 20,
-    backgroundColor: "#fff",
-    width: "85%",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  infoText: {
-    color: "#252526",
-    textAlign: "center",
+  paramsTitle: {
     fontSize: 18,
-    fontWeight: "500",
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  paramsText: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  passportDataContainer: {
+    flex: 1,
+    width: "100%",
   },
 });
