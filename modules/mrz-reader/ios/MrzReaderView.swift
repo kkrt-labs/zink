@@ -109,26 +109,6 @@ public class MrzReaderView: ExpoView, AVCaptureVideoDataOutputSampleBufferDelega
             return
         }
 
-        // Configure video device for better performance
-        do {
-            try videoDevice.lockForConfiguration()
-            // Enable continuous auto focus
-            if videoDevice.isFocusModeSupported(.continuousAutoFocus) {
-                videoDevice.focusMode = .continuousAutoFocus
-            }
-            // Enable continuous auto exposure
-            if videoDevice.isExposureModeSupported(.continuousAutoExposure) {
-                videoDevice.exposureMode = .continuousAutoExposure
-            }
-            // Enable continuous auto white balance
-            if videoDevice.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
-                videoDevice.whiteBalanceMode = .continuousAutoWhiteBalance
-            }
-            videoDevice.unlockForConfiguration()
-        } catch {
-            print("Error configuring video device: \(error)")
-        }
-
         // 2. Create device input.
         do {
             let videoInput = try AVCaptureDeviceInput(device: videoDevice)
