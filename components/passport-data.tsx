@@ -1,50 +1,9 @@
+import {
+  PassportData,
+  PassportDataProps,
+} from "@modules/nfc-reader/src/NfcReader.types";
 import * as React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-
-// Passport data type definition
-export type PassportData = {
-  documentType: string;
-  documentSubType: string;
-  documentNumber: string;
-  issuingAuthority: string;
-  documentExpiryDate: string;
-  dateOfBirth: string;
-  gender: string;
-  nationality: string;
-  lastName: string;
-  firstName: string;
-  passportMRZ: string;
-  placeOfBirth: string;
-  residenceAddress: string;
-  phoneNumber: string;
-  personalNumber: string;
-  LDSVersion: string;
-  dataGroupsPresent: string[];
-  documentSigningCertificate: {
-    fingerprint: string;
-    issuerName: string;
-    subjectName: string;
-    serialNumber: string;
-    signatureAlgorithm: string;
-    publicKeyAlgorithm: string;
-    notBefore: string;
-    notAfter: string;
-  };
-  countrySigningCertificate: {
-    fingerprint: string;
-    issuerName: string;
-    subjectName: string;
-    serialNumber: string;
-    signatureAlgorithm: string;
-    publicKeyAlgorithm: string;
-    notBefore: string;
-    notAfter: string;
-  };
-};
-
-interface PassportDataProps {
-  data: PassportData;
-}
 
 export const PassportDataView: React.FC<PassportDataProps> = ({ data }) => {
   const renderCertificateInfo = (

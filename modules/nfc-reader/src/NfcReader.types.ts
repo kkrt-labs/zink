@@ -1,4 +1,7 @@
-export type NfcData = {
+export interface PassportDataProps {
+  data: PassportData;
+}
+export type PassportData = {
   documentType: string;
   documentSubType: string;
   documentNumber: string;
@@ -10,23 +13,23 @@ export type NfcData = {
   lastName: string;
   firstName: string;
   passportMRZ: string;
-  placeOfBirth?: string;
-  residenceAddress?: string;
-  phoneNumber?: string;
-  personalNumber?: string;
-  documentSigningCertificate: X509Wrapper;
-  countrySigningCertificate: X509Wrapper;
+  placeOfBirth: string;
+  residenceAddress: string;
+  phoneNumber: string;
+  personalNumber: string;
   LDSVersion: string;
-  dataGroupsPresent: [string];
+  dataGroupsPresent: string[];
+  countrySigningCertificate: X509Wrapper;
+  documentSigningCertificate: X509Wrapper;
 };
 
 export type X509Wrapper = {
-  fingerprint?: string;
-  issuerName?: string;
-  subjectName?: string;
-  serialNumber?: string;
-  signatureAlgorithm?: string;
-  publicKeyAlgorithm?: string;
-  notBefore?: string;
-  notAfter?: string;
+  fingerprint: string;
+  issuerName: string;
+  subjectName: string;
+  serialNumber: string;
+  signatureAlgorithm: string;
+  publicKeyAlgorithm: string;
+  notBefore: string;
+  notAfter: string;
 };
