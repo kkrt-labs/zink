@@ -371,19 +371,6 @@ public class MrzReaderView: ExpoView, AVCaptureVideoDataOutputSampleBufferDelega
                             optionalData
         guard validateCheckDigit(value: compositeValue, checkDigit: overallCheckDigit) else { return nil }
 
-        // Format dates (YYMMDD to YYYY-MM-DD)
-        let currentYear = Calendar.current.component(.year, from: Date())
-        let century = currentYear / 100
-        let dobYear = Int(dob.prefix(2)) ?? 0
-        let expiryYear = Int(expiry.prefix(2)) ?? 0
-
-        // If the year is greater than current year + 10, assume previous century
-        let dobCentury = dobYear > (currentYear % 100 + 10) ? century - 1 : century
-        let expiryCentury = expiryYear > (currentYear % 100 + 10) ? century - 1 : century
-
-        let dobFormatted = "\(dobCentury)\(dob.prefix(2))-\(dob.dropFirst(2).prefix(2))-\(dob.dropFirst(4))"
-        let expiryFormatted = "\(expiryCentury)\(expiry.prefix(2))-\(expiry.dropFirst(2).prefix(2))-\(expiry.dropFirst(4))"
-
         // Build parsed data
         return [
             "raw": "\(line1)\n\(line2)",
@@ -394,10 +381,8 @@ public class MrzReaderView: ExpoView, AVCaptureVideoDataOutputSampleBufferDelega
             "givenNames": givenNames,
             "nationality": nationality,
             "dateOfBirth": dob,
-            "dateOfBirthFormatted": dobFormatted,
             "sex": sex,
             "expiryDate": expiry,
-            "expiryDateFormatted": expiryFormatted,
             "optionalData": optionalData,
             "isValid": true
         ]
