@@ -17,7 +17,6 @@ public class MrzReaderView: ExpoView, AVCaptureVideoDataOutputSampleBufferDelega
     // Throttle recognition to avoid overwhelming CPU and sending too many events.
     private var lastRecognitionTime = Date(timeIntervalSince1970: 0)
     private let recognitionInterval: TimeInterval = 0.3 // Reduced from 0.5 to 0.3 seconds for more frequent processing
-    private var isProcessing = false // Add flag to prevent concurrent processing
 
     let onMrzExtracted = EventDispatcher()
     let onError = EventDispatcher()
@@ -220,8 +219,6 @@ public class MrzReaderView: ExpoView, AVCaptureVideoDataOutputSampleBufferDelega
     public func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         // This method is called on sessionQueue.
 
-        // Prevent concurrent processing
-        guard !isProcessing else { return }
 
         // Throttle frame processing.
         let currentTime = Date()
@@ -229,16 +226,15 @@ public class MrzReaderView: ExpoView, AVCaptureVideoDataOutputSampleBufferDelega
             return
         }
 
-        isProcessing = true
         lastRecognitionTime = currentTime
 
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
-            isProcessing = false
+            // NSLog("MRZReaderView: Failed to get pixel buffer from sample buffer.")
             return
         }
 
         guard let request = textRecognitionRequest else {
-            isProcessing = false
+            // Should not happen if setupTextRecognition is called in init.
             DispatchQueue.main.async { self.onError(["message": "Text recognition request not initialized."]) }
             return
         }
@@ -262,8 +258,6 @@ public class MrzReaderView: ExpoView, AVCaptureVideoDataOutputSampleBufferDelega
         } catch {
             DispatchQueue.main.async { self.onError(["message": "Failed to perform text recognition: \(error.localizedDescription)"]) }
         }
-
-        isProcessing = false
     }
 
     private func processRecognizedText(observations: [VNRecognizedTextObservation]) {
