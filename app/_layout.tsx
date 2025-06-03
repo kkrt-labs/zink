@@ -13,7 +13,7 @@ export default function RootLayout() {
         screenOptions={{
           headerBackButtonDisplayMode: "minimal",
           headerTitle: "",
-          //   headerTransparent: true,
+          //   headerTransparent: true, // If set to true, navigation is not properly working on iPhone 7 iOS 15.8.4
         }}
       />
     </QueryClientProvider>
