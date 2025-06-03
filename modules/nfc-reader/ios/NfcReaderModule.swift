@@ -24,7 +24,7 @@ public class NfcReaderModule: Module {
       "K": "20", "L": "21", "M": "22", "N": "23", "O": "24",
       "P": "25", "Q": "26", "R": "27", "S": "28", "T": "29",
       "U": "30", "V": "31", "W": "32", "X": "33", "Y": "34",
-      "Z": "35"
+      "Z": "35",
     ]
   }
 
@@ -34,16 +34,17 @@ public class NfcReaderModule: Module {
     AsyncFunction("scan") { (documentNo: String, dateOfBirth: String, dateOfExpiry: String) in
       let customMessageHandler: (NFCViewDisplayMessage) -> String? = { (displayMessage) in
         switch displayMessage {
-          case .requestPresentPassport:
-            return "Hold your iPhone against an NFC enabled passport."
-          default:
-            // Return nil for all other messages so we use the provided default
-            return nil
-          }
+        case .requestPresentPassport:
+          return "Hold your iPhone against an NFC enabled passport."
+        default:
+          // Return nil for all other messages so we use the provided default
+          return nil
+        }
       }
 
       do {
-        let mrzKey = getMrzKey(documentNo: documentNo, dateOfBirth: dateOfBirth, dateOfExpiry: dateOfExpiry)
+        let mrzKey = getMrzKey(
+          documentNo: documentNo, dateOfBirth: dateOfBirth, dateOfExpiry: dateOfExpiry)
 
         let passport = try await passportReader.readPassport(
           mrzKey: mrzKey,
@@ -60,6 +61,19 @@ public class NfcReaderModule: Module {
             userInfo: [NSLocalizedDescriptionKey: "Failed to find masterlist.pem"]
           )
         }
+
+        guard let sod = passport.getDataGroup(.SOD),
+          let dg1 = passport.getDataGroup(.DG1)
+        else {
+          throw NSError(
+            domain: "NfcReader",
+            code: 1,
+            userInfo: [NSLocalizedDescriptionKey: "Failed to get required data groups (SOD or DG1)"]
+          )
+        }
+
+        let sodRaw = Data(sod.data).base64EncodedString()
+        let dg1Raw = Data(dg1.data).base64EncodedString()
 
         // Create a dictionary with the passport data
         let passportData: [String: Any] = [
@@ -88,7 +102,7 @@ public class NfcReaderModule: Module {
             "signatureAlgorithm": passport.documentSigningCertificate?.getSignatureAlgorithm(),
             "publicKeyAlgorithm": passport.documentSigningCertificate?.getPublicKeyAlgorithm(),
             "notBefore": passport.documentSigningCertificate?.getNotBeforeDate(),
-            "notAfter": passport.documentSigningCertificate?.getNotAfterDate()
+            "notAfter": passport.documentSigningCertificate?.getNotAfterDate(),
           ],
           "countrySigningCertificate": [
             "fingerprint": passport.countrySigningCertificate?.getFingerprint(),
@@ -98,11 +112,14 @@ public class NfcReaderModule: Module {
             "signatureAlgorithm": passport.countrySigningCertificate?.getSignatureAlgorithm(),
             "publicKeyAlgorithm": passport.countrySigningCertificate?.getPublicKeyAlgorithm(),
             "notBefore": passport.countrySigningCertificate?.getNotBeforeDate(),
-            "notAfter": passport.countrySigningCertificate?.getNotAfterDate()
-          ]
+            "notAfter": passport.countrySigningCertificate?.getNotAfterDate(),
+          ],
+          "sod": sodRaw,
+          "dg1": dg1Raw,
         ]
 
-        let jsonData = try JSONSerialization.data(withJSONObject: passportData, options: .prettyPrinted)
+        let jsonData = try JSONSerialization.data(
+          withJSONObject: passportData, options: .prettyPrinted)
         guard let jsonString = String(data: jsonData, encoding: .utf8) else {
           throw NSError(
             domain: "NfcReader",
@@ -135,9 +152,8 @@ public class NfcReaderModule: Module {
     let birthDateChecksum = calcCheckSum(birthDate)
     let expiryDateChecksum = calcCheckSum(expiryDate)
 
-    return "\(documentNo)\(documentNoChecksum)" +
-           "\(birthDate)\(birthDateChecksum)" +
-           "\(expiryDate)\(expiryDateChecksum)"
+    return "\(documentNo)\(documentNoChecksum)" + "\(birthDate)\(birthDateChecksum)"
+      + "\(expiryDate)\(expiryDateChecksum)"
   }
 
   /// Pads a string to the specified length using the padding character
@@ -160,7 +176,8 @@ public class NfcReaderModule: Module {
 
     for character in checkString {
       guard let lookup = Constants.characterMapping["\(character)"],
-            let number = Int(lookup) else { return 0 }
+        let number = Int(lookup)
+      else { return 0 }
 
       let product = number * Constants.multipliers[multiplierIndex]
       sum += product

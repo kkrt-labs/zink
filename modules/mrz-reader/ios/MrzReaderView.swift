@@ -208,7 +208,7 @@ public class MrzReaderView: ExpoView, AVCaptureVideoDataOutputSampleBufferDelega
 
         // Set region of interest to focus on the middle portion of the frame
         // This matches our overlay dimensions (90% width, centered)
-        request.regionOfInterest = CGRect(x: 0.05, y: 0.3, width: 0.9, height: 0.4)
+        // request.regionOfInterest = CGRect(x: 0.05, y: 0.3, width: 0.9, height: 0.4)
 
         // Optimize for MRZ character set
         request.recognitionLevel = .accurate

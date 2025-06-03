@@ -12,14 +12,17 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "org.kakarot.zink",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "Allow access to your photo library",
         "NSCameraUsageDescription": "Allow access to your camera",
         "NFCReaderUsageDescription": "This app uses NFC to read your passport information.",
         "com.apple.developer.nfc.readersession.iso7816.select-identifiers": [
-          "A0000002471001", // eMRTD
-          "D4100000030001", // eID (often on same chip)
+          "A0000002471001",
+          "D4100000030001",
           "00000000000000"
         ]
       },
@@ -58,13 +61,18 @@
           "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera"
         }
       ],
-      // This is a workaround to fix duplicate bcprov-jdk15on dependency
-      // https://stackoverflow.com/questions/77962634/duplicate-bouncycastle-classes-using-expo-dev-client-and-expo-updates/78935333
       "./plugins/withBcprovExclusion.js",
       [
         "expo-custom-assets",
         {
           "assetsPaths": ["./assets/csca"]
+        }
+      ],
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true,
+          "faceIDPermission": "Allow $(PRODUCT_NAME) to access your Face ID biometric data."
         }
       ]
     ],

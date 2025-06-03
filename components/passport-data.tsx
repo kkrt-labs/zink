@@ -2,10 +2,21 @@ import {
   PassportData,
   PassportDataProps,
 } from "@modules/nfc-reader/src/NfcReader.types";
+import { Binary, SOD } from "@zkpassport/utils";
+import { Buffer } from "buffer";
+import { getRandomValues } from "expo-crypto";
 import * as React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
+// Set up minimal polyfills
+global.Buffer = global.Buffer || Buffer;
+global.crypto = global.crypto || { getRandomValues };
+
 export const PassportDataView: React.FC<PassportDataProps> = ({ data }) => {
+  const sodFromBase64 = data.sod
+    ? SOD.fromDER(Binary.fromBase64(data.sod))
+    : null;
+  const dg1FromBase64 = data.dg1 ? Binary.fromBase64(data.dg1) : null;
   const renderCertificateInfo = (
     cert: PassportData["documentSigningCertificate"],
     title: string,
@@ -80,6 +91,17 @@ export const PassportDataView: React.FC<PassportDataProps> = ({ data }) => {
             data.countrySigningCertificate,
             "Country Signing Certificate",
           )}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>SOD Digest Algorithms</Text>
+        <Text style={styles.value}>
+          {sodFromBase64?.digestAlgorithms.join(", ")}
+        </Text>
+      </View>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>DG1</Text>
+        <Text style={styles.value}>{dg1FromBase64?.toBase64()}</Text>
       </View>
     </ScrollView>
   );
