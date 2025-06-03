@@ -44,8 +44,6 @@ public class NfcReaderModule: Module {
 
       do {
         let mrzKey = getMrzKey(documentNo: documentNo, dateOfBirth: dateOfBirth, dateOfExpiry: dateOfExpiry)
-        // let masterListURL = Bundle.main.url(forResource: "masterList", withExtension: ".pem")
-        // passportReader.setMasterListURL( masterListURL! )
 
         let passport = try await passportReader.readPassport(
           mrzKey: mrzKey,
@@ -53,23 +51,18 @@ public class NfcReaderModule: Module {
           customDisplayMessage: customMessageHandler
         )
 
-        if let masterListURL = Bundle.main.url(forResource: "masterList", withExtension: "pem") {
+        if let masterListURL = Bundle.main.url(forResource: "masterlist", withExtension: "pem") {
           passport.verifyPassport(masterListURL: masterListURL)
         } else {
-          // Handle error: file not found
+          throw NSError(
+            domain: "NfcReader",
+            code: 1,
+            userInfo: [NSLocalizedDescriptionKey: "Failed to find masterlist.pem"]
+          )
         }
-
-        let comDg = passport.getDataGroup(DataGroupId.COM)
-        let dg1 = passport.getDataGroup(DataGroupId.DG1)
-        let sodDg = passport.getDataGroup(DataGroupId.SOD)
-
-        // let sodAsn1 = OpenSSLUtils.ASN1Parse(sodDg.data)
 
         // Create a dictionary with the passport data
         let passportData: [String: Any] = [
-          // "com": comDg,
-          // "dg1": dg1,
-          // "sod": sodDg,
           "documentType": passport.documentType,
           "documentSubType": passport.documentSubType,
           "documentNumber": passport.documentNumber,
