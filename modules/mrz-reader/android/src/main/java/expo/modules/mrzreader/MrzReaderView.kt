@@ -24,7 +24,10 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 @ExperimentalGetImage
-class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context, appContext) {
+class MrzReaderView(
+    context: Context,
+    appContext: AppContext,
+) : ExpoView(context, appContext) {
     private val onMrzExtracted by EventDispatcher()
     private val onError by EventDispatcher()
 
@@ -50,57 +53,57 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
     private var currentLifecycleOwner: LifecycleOwner? = null
 
     private val lifecycleObserver =
-            object : DefaultLifecycleObserver {
-                override fun onResume(owner: LifecycleOwner) {
-                    super.onResume(owner)
+        object : DefaultLifecycleObserver {
+            override fun onResume(owner: LifecycleOwner) {
+                super.onResume(owner)
+                Log.d(
+                    TAG,
+                    "LifecycleObserver: ON_RESUME. View attached: $isAttachedToWindow, Permissions: ${allPermissionsGranted()}, CameraBound: ${isCameraStartedAndBound.get()}",
+                )
+                if (isAttachedToWindow &&
+                    allPermissionsGranted() &&
+                    !isCameraStartedAndBound.get()
+                ) {
                     Log.d(
-                            TAG,
-                            "LifecycleObserver: ON_RESUME. View attached: $isAttachedToWindow, Permissions: ${allPermissionsGranted()}, CameraBound: ${isCameraStartedAndBound.get()}"
+                        TAG,
+                        "LifecycleObserver: Conditions met in ON_RESUME, attempting to start camera.",
                     )
-                    if (isAttachedToWindow &&
-                                    allPermissionsGranted() &&
-                                    !isCameraStartedAndBound.get()
-                    ) {
-                        Log.d(
-                                TAG,
-                                "LifecycleObserver: Conditions met in ON_RESUME, attempting to start camera."
-                        )
-                        startCameraWithLifecycle(owner)
-                    } else if (isAttachedToWindow && !allPermissionsGranted()) {
-                        Log.w(TAG, "LifecycleObserver: ON_RESUME but permissions not granted.")
-                        reportError("PERMISSION_DENIED", "Camera permission not granted.")
-                    }
-                }
-
-                override fun onPause(owner: LifecycleOwner) {
-                    super.onPause(owner)
-                    Log.d(TAG, "LifecycleObserver: ON_PAUSE.")
-                    if (isCameraStartedAndBound.get()) {
-                        Log.d(
-                                TAG,
-                                "LifecycleObserver: Camera was bound, stopping camera due to ON_PAUSE."
-                        )
-                        stopCamera()
-                    }
+                    startCameraWithLifecycle(owner)
+                } else if (isAttachedToWindow && !allPermissionsGranted()) {
+                    Log.w(TAG, "LifecycleObserver: ON_RESUME but permissions not granted.")
+                    reportError("PERMISSION_DENIED", "Camera permission not granted.")
                 }
             }
 
+            override fun onPause(owner: LifecycleOwner) {
+                super.onPause(owner)
+                Log.d(TAG, "LifecycleObserver: ON_PAUSE.")
+                if (isCameraStartedAndBound.get()) {
+                    Log.d(
+                        TAG,
+                        "LifecycleObserver: Camera was bound, stopping camera due to ON_PAUSE.",
+                    )
+                    stopCamera()
+                }
+            }
+        }
+
     init {
         previewView =
-                PreviewView(context).apply {
-                    layoutParams =
-                            ViewGroup.LayoutParams(
-                                    ViewGroup.LayoutParams.MATCH_PARENT,
-                                    ViewGroup.LayoutParams.MATCH_PARENT
-                            )
-                }
+            PreviewView(context).apply {
+                layoutParams =
+                    ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                    )
+            }
         addView(previewView)
         Log.d(TAG, "MrzReaderView initialized.")
     }
 
     private fun allPermissionsGranted() =
-            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
-                    PackageManager.PERMISSION_GRANTED
+        ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+            PackageManager.PERMISSION_GRANTED
 
     override fun requestLayout() {
         super.requestLayout()
@@ -132,40 +135,40 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
 
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
         cameraProviderFuture.addListener(
-                {
-                    try {
-                        cameraProvider = cameraProviderFuture.get()
-                        Log.d(TAG, "startCameraWithLifecycle: CameraProvider obtained.")
-                        bindUseCases()
-                    } catch (e: Exception) {
-                        Log.e(TAG, "startCameraWithLifecycle: Failed to get camera provider", e)
-                        reportError("CAMERA_PROVIDER_FAILED", "Failed to get camera provider", e)
-                        isCameraSetupInProgress.set(false)
-                    }
-                },
-                ContextCompat.getMainExecutor(context)
+            {
+                try {
+                    cameraProvider = cameraProviderFuture.get()
+                    Log.d(TAG, "startCameraWithLifecycle: CameraProvider obtained.")
+                    bindUseCases()
+                } catch (e: Exception) {
+                    Log.e(TAG, "startCameraWithLifecycle: Failed to get camera provider", e)
+                    reportError("CAMERA_PROVIDER_FAILED", "Failed to get camera provider", e)
+                    isCameraSetupInProgress.set(false)
+                }
+            },
+            ContextCompat.getMainExecutor(context),
         )
     }
 
     private fun bindUseCases() {
         val provider =
-                cameraProvider
-                        ?: run {
-                            Log.e(TAG, "bindUseCases: Camera provider is null.")
-                            isCameraSetupInProgress.set(false)
-                            return
-                        }
+            cameraProvider
+                ?: run {
+                    Log.e(TAG, "bindUseCases: Camera provider is null.")
+                    isCameraSetupInProgress.set(false)
+                    return
+                }
         val owner =
-                this.currentLifecycleOwner
-                        ?: run {
-                            Log.e(TAG, "bindUseCases: LifecycleOwner is null.")
-                            isCameraSetupInProgress.set(false)
-                            return
-                        }
+            this.currentLifecycleOwner
+                ?: run {
+                    Log.e(TAG, "bindUseCases: LifecycleOwner is null.")
+                    isCameraSetupInProgress.set(false)
+                    return
+                }
 
         Log.d(
-                TAG,
-                "bindUseCases: Using LifecycleOwner: $owner, State: ${owner.lifecycle.currentState}"
+            TAG,
+            "bindUseCases: Using LifecycleOwner: $owner, State: ${owner.lifecycle.currentState}",
         )
         if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) {
             Log.e(TAG, "bindUseCases: LifecycleOwner is DESTROYED.")
@@ -179,8 +182,8 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
             previewView.post {
                 if (previewView.width > 0 && previewView.height > 0) {
                     Log.d(
-                            TAG,
-                            "bindUseCases: PreviewView now laid out (${previewView.width}x${previewView.height}), proceeding."
+                        TAG,
+                        "bindUseCases: PreviewView now laid out (${previewView.width}x${previewView.height}), proceeding.",
                     )
                     bindUseCasesInternal()
                 } else {
@@ -198,24 +201,28 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
         val provider = cameraProvider ?: return
         val owner = this.currentLifecycleOwner ?: return
 
-        previewUseCase = Preview.Builder()
-            .setTargetAspectRatio(AspectRatio.RATIO_16_9)
-            .build()
-            .also {
-                // Set surface provider BEFORE binding - this is crucial
-                it.setSurfaceProvider(previewView.surfaceProvider)
-                Log.d(TAG, "bindUseCasesInternal: Preview use case created and surface provider set.")
-            }
+        previewUseCase =
+            Preview
+                .Builder()
+                .setTargetAspectRatio(AspectRatio.RATIO_16_9)
+                .build()
+                .also {
+                    // Set surface provider BEFORE binding - this is crucial
+                    it.setSurfaceProvider(previewView.surfaceProvider)
+                    Log.d(TAG, "bindUseCasesInternal: Preview use case created and surface provider set.")
+                }
 
-        imageAnalysisUseCase = ImageAnalysis.Builder()
-            .setTargetAspectRatio(AspectRatio.RATIO_16_9)
-            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
-            .build()
-            .also {
-                Log.d(TAG, "bindUseCasesInternal: ImageAnalysis use case created.")
-                it.setAnalyzer(cameraExecutor, mrzImageAnalyzerInstance)
-            }
+        imageAnalysisUseCase =
+            ImageAnalysis
+                .Builder()
+                .setTargetAspectRatio(AspectRatio.RATIO_16_9)
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
+                .build()
+                .also {
+                    Log.d(TAG, "bindUseCasesInternal: ImageAnalysis use case created.")
+                    it.setAnalyzer(cameraExecutor, mrzImageAnalyzerInstance)
+                }
 
         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
         try {
@@ -223,12 +230,13 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
             provider.unbindAll()
 
             Log.d(TAG, "bindUseCasesInternal: Attempting to bind Preview and ImageAnalysis use cases.")
-            camera = provider.bindToLifecycle(
-                owner,
-                cameraSelector,
-                previewUseCase,
-                imageAnalysisUseCase
-            )
+            camera =
+                provider.bindToLifecycle(
+                    owner,
+                    cameraSelector,
+                    previewUseCase,
+                    imageAnalysisUseCase,
+                )
 
             Log.d(TAG, "bindUseCasesInternal: Use cases bound successfully. CameraState: ${camera?.cameraInfo?.cameraState?.value}")
             isCameraStartedAndBound.set(true)
@@ -249,26 +257,27 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
             camera?.let { cam ->
                 if (previewView.width == 0 || previewView.height == 0) {
                     Log.w(
-                            TAG,
-                            "triggerAutoFocus: PreviewView not laid out yet (width or height is 0). Skipping focus."
+                        TAG,
+                        "triggerAutoFocus: PreviewView not laid out yet (width or height is 0). Skipping focus.",
                     )
                     return@execute
                 }
                 val pointFactory =
-                        SurfaceOrientedMeteringPointFactory(
-                                previewView.width.toFloat(),
-                                previewView.height.toFloat()
-                        )
+                    SurfaceOrientedMeteringPointFactory(
+                        previewView.width.toFloat(),
+                        previewView.height.toFloat(),
+                    )
                 val centerPoint =
-                        pointFactory.createPoint(previewView.width / 2f, previewView.height / 2f)
+                    pointFactory.createPoint(previewView.width / 2f, previewView.height / 2f)
                 val action =
-                        FocusMeteringAction.Builder(centerPoint, FocusMeteringAction.FLAG_AF)
-                                .setAutoCancelDuration(3, TimeUnit.SECONDS)
-                                .build()
+                    FocusMeteringAction
+                        .Builder(centerPoint, FocusMeteringAction.FLAG_AF)
+                        .setAutoCancelDuration(3, TimeUnit.SECONDS)
+                        .build()
                 Log.d(TAG, "Triggering auto-focus via cameraControl.")
                 cam.cameraControl.startFocusAndMetering(action)
             }
-                    ?: Log.w(TAG, "triggerAutoFocus: Camera object is null, cannot trigger focus.")
+                ?: Log.w(TAG, "triggerAutoFocus: Camera object is null, cannot trigger focus.")
         }
     }
 
@@ -282,8 +291,8 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
             currentLifecycleOwner?.lifecycle?.removeObserver(lifecycleObserver)
             currentLifecycleOwner = newLifecycleOwner
             Log.d(
-                    TAG,
-                    "onAttachedToWindow: New LifecycleOwner obtained: $currentLifecycleOwner. Adding observer."
+                TAG,
+                "onAttachedToWindow: New LifecycleOwner obtained: $currentLifecycleOwner. Adding observer.",
             )
             currentLifecycleOwner?.lifecycle?.addObserver(lifecycleObserver)
         }
@@ -292,11 +301,12 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
             Log.w(TAG, "onAttachedToWindow: Camera permission not granted.")
             reportError("PERMISSION_DENIED", "Camera permission not granted.")
         } else if (newLifecycleOwner?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) ==
-                        true && !isCameraStartedAndBound.get()
+            true &&
+            !isCameraStartedAndBound.get()
         ) {
             Log.d(
-                    TAG,
-                    "onAttachedToWindow: Conditions met (Resumed, Permissions OK, Not Started/Bound). Attempting to start camera."
+                TAG,
+                "onAttachedToWindow: Conditions met (Resumed, Permissions OK, Not Started/Bound). Attempting to start camera.",
             )
             startCameraWithLifecycle(newLifecycleOwner)
         }
@@ -338,7 +348,11 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
         currentLifecycleOwner = null
     }
 
-    private fun reportError(code: String, message: String, exception: Exception? = null) {
+    private fun reportError(
+        code: String,
+        message: String,
+        exception: Exception? = null,
+    ) {
         val errorMap = mutableMapOf<String, Any>("code" to code, "message" to message)
         exception?.let { errorMap["details"] = it.localizedMessage ?: "Unknown error" }
         onError(errorMap)
@@ -348,10 +362,11 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
         init {
             Log.d(TAG, "MrzImageAnalyzer instance created.")
         }
+
         override fun analyze(imageProxy: ImageProxy) {
             Log.d(
-                    TAG,
-                    "MrzImageAnalyzer.analyze: Frame received. Timestamp: ${imageProxy.imageInfo.timestamp}"
+                TAG,
+                "MrzImageAnalyzer.analyze: Frame received. Timestamp: ${imageProxy.imageInfo.timestamp}",
             )
 
             val currentTime = System.currentTimeMillis()
@@ -364,34 +379,35 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
             val mediaImage = imageProxy.image
             if (mediaImage != null) {
                 val image =
-                        InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                    InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
                 Log.d(
-                        TAG,
-                        "ImageAnalysis: Processing image frame. Rotation: ${imageProxy.imageInfo.rotationDegrees}, Size: ${mediaImage.width}x${mediaImage.height}"
+                    TAG,
+                    "ImageAnalysis: Processing image frame. Rotation: ${imageProxy.imageInfo.rotationDegrees}, Size: ${mediaImage.width}x${mediaImage.height}",
                 )
                 textRecognizer
-                        .process(image)
-                        .addOnSuccessListener { visionText ->
+                    .process(image)
+                    .addOnSuccessListener { visionText ->
+                        Log.d(
+                            TAG,
+                            "ML Kit Success. Raw Text Found (length ${visionText.text.length}): \"${visionText.text.replace(
+                                "\n",
+                                " ",
+                            )}\"",
+                        )
+                        val mrzData = processRecognizedTextFromBlocks(visionText)
+                        if (mrzData != null) {
+                            Log.i(TAG, "MRZ Extracted (before dispatch): $mrzData")
+                            onMrzExtracted(mrzData)
+                            Log.i(TAG, "onMrzExtracted event dispatched with data.")
+                        } else {
                             Log.d(
-                                    TAG,
-                                    "ML Kit Success. Raw Text Found (length ${visionText.text.length}): \"${visionText.text.replace("\n", " ")}\""
+                                TAG,
+                                "processRecognizedTextFromBlocks returned null for this frame.",
                             )
-                            val mrzData = processRecognizedTextFromBlocks(visionText)
-                            if (mrzData != null) {
-                                Log.i(TAG, "MRZ Extracted (before dispatch): $mrzData")
-                                onMrzExtracted(mrzData)
-                                Log.i(TAG, "onMrzExtracted event dispatched with data.")
-                            } else {
-                                Log.d(
-                                        TAG,
-                                        "processRecognizedTextFromBlocks returned null for this frame."
-                                )
-                            }
                         }
-                        .addOnFailureListener { e ->
-                            Log.e(TAG, "ML Kit Text recognition failed for this frame.", e)
-                        }
-                        .addOnCompleteListener { imageProxy.close() }
+                    }.addOnFailureListener { e ->
+                        Log.e(TAG, "ML Kit Text recognition failed for this frame.", e)
+                    }.addOnCompleteListener { imageProxy.close() }
             } else {
                 Log.w(TAG, "ImageAnalysis: mediaImage is null for this frame.")
                 imageProxy.close()
@@ -399,14 +415,12 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
         }
     }
 
-    private fun processRecognizedTextFromBlocks(
-            visionText: com.google.mlkit.vision.text.Text
-    ): Map<String, Any>? {
+    private fun processRecognizedTextFromBlocks(visionText: com.google.mlkit.vision.text.Text): Map<String, Any>? {
         val candidateMrzLines = mutableListOf<String>()
 
         Log.d(
-                TAG,
-                "processRecognizedTextFromBlocks: Starting processing of ${visionText.textBlocks.size} blocks."
+            TAG,
+            "processRecognizedTextFromBlocks: Starting processing of ${visionText.textBlocks.size} blocks.",
         )
         for (block in visionText.textBlocks) {
             for (line in block.lines) {
@@ -414,20 +428,20 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
                 val fullyCleanedLine = cleanMrzString(originalLineText)
 
                 Log.d(
-                        TAG,
-                        "processRecognizedTextFromBlocks: Original: '${originalLineText}', Fully Cleaned: '$fullyCleanedLine' (length: ${fullyCleanedLine.length})"
+                    TAG,
+                    "processRecognizedTextFromBlocks: Original: '$originalLineText', Fully Cleaned: '$fullyCleanedLine' (length: ${fullyCleanedLine.length})",
                 )
 
                 val plausibleLengthTd3 = fullyCleanedLine.length in 42..46
                 val plausibleLengthTd1 = fullyCleanedLine.length in 28..32
                 val plausibleLengthTd2 = fullyCleanedLine.length in 34..38
                 val isPlausibleOverall =
-                        plausibleLengthTd1 || plausibleLengthTd2 || plausibleLengthTd3
+                    plausibleLengthTd1 || plausibleLengthTd2 || plausibleLengthTd3
                 val isPureMrzAfterCleaning = fullyCleanedLine.isNotEmpty()
 
                 Log.d(
-                        TAG,
-                        "Line: '$fullyCleanedLine' -> isPlausibleOverall: $isPlausibleOverall (TD3: $plausibleLengthTd3), isPureMrzAfterCleaning: $isPureMrzAfterCleaning"
+                    TAG,
+                    "Line: '$fullyCleanedLine' -> isPlausibleOverall: $isPlausibleOverall (TD3: $plausibleLengthTd3), isPureMrzAfterCleaning: $isPureMrzAfterCleaning",
                 )
 
                 if (isPlausibleOverall && isPureMrzAfterCleaning) {
@@ -435,23 +449,27 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
                     Log.d(TAG, "Added candidate line: '$fullyCleanedLine'")
                 } else {
                     Log.d(
-                            TAG,
-                            "Discarded line (original: '$originalLineText', fully cleaned: '$fullyCleanedLine')"
+                        TAG,
+                        "Discarded line (original: '$originalLineText', fully cleaned: '$fullyCleanedLine')",
                     )
                 }
             }
         }
 
         Log.d(
-                TAG,
-                "processRecognizedTextFromBlocks: Candidate MRZ Lines (${candidateMrzLines.size}, lengths ${candidateMrzLines.map { it.length }}): $candidateMrzLines"
+            TAG,
+            "processRecognizedTextFromBlocks: Candidate MRZ Lines (${candidateMrzLines.size}, lengths ${candidateMrzLines.map {
+                it.length
+            }}): $candidateMrzLines",
         )
         if (candidateMrzLines.isEmpty()) return null
 
         val td3ishLines = candidateMrzLines.filter { it.length in 42..46 }
         Log.d(
-                TAG,
-                "processRecognizedTextFromBlocks: TD3-ish Candidate Lines (${td3ishLines.size}, lengths ${td3ishLines.map { it.length }}): $td3ishLines"
+            TAG,
+            "processRecognizedTextFromBlocks: TD3-ish Candidate Lines (${td3ishLines.size}, lengths ${td3ishLines.map {
+                it.length
+            }}): $td3ishLines",
         )
 
         if (td3ishLines.size >= 2) {
@@ -465,38 +483,44 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
                     var line1ToParse = td3ishLines[i]
                     var line2ToParse = td3ishLines[j]
 
-                    if (line1ToParse.length < 44) line1ToParse = line1ToParse.padEnd(44, '<')
-                    else if (line1ToParse.length > 44) line1ToParse = line1ToParse.substring(0, 44)
+                    if (line1ToParse.length < 44) {
+                        line1ToParse = line1ToParse.padEnd(44, '<')
+                    } else if (line1ToParse.length > 44) {
+                        line1ToParse = line1ToParse.substring(0, 44)
+                    }
 
-                    if (line2ToParse.length < 44) line2ToParse = line2ToParse.padEnd(44, '<')
-                    else if (line2ToParse.length > 44) line2ToParse = line2ToParse.substring(0, 44)
+                    if (line2ToParse.length < 44) {
+                        line2ToParse = line2ToParse.padEnd(44, '<')
+                    } else if (line2ToParse.length > 44) {
+                        line2ToParse = line2ToParse.substring(0, 44)
+                    }
 
                     if (line1ToParse.length == 44 && line2ToParse.length == 44) {
                         Log.d(
-                                TAG,
-                                "Attempting parseMrzTd3 (strict) with adjusted lines: L1='${line1ToParse}', L2='${line2ToParse}'"
+                            TAG,
+                            "Attempting parseMrzTd3 (strict) with adjusted lines: L1='$line1ToParse', L2='$line2ToParse'",
                         )
                         val parsedData =
-                                parseMrzTd3(
-                                        line1ToParse,
-                                        line2ToParse,
-                                        performStrictValidation = true
-                                )
+                            parseMrzTd3(
+                                line1ToParse,
+                                line2ToParse,
+                                performStrictValidation = true,
+                            )
                         if (parsedData != null && parsedData["isValid"] == true) {
                             Log.i(TAG, "Strict parseMrzTd3 successful with adjusted lines.")
                             return parsedData
                         } else if (parsedData != null) {
                             Log.d(
-                                    TAG,
-                                    "Strict parseMrzTd3 returned data but !isValid for pair. Result: $parsedData"
+                                TAG,
+                                "Strict parseMrzTd3 returned data but !isValid for pair. Result: $parsedData",
                             )
                         } else {
                             Log.d(TAG, "Strict parseMrzTd3 returned null for pair.")
                         }
                     } else {
                         Log.d(
-                                TAG,
-                                "Skipping pair after adjustment, lengths not 44: L1=${line1ToParse.length}, L2=${line2ToParse.length}"
+                            TAG,
+                            "Skipping pair after adjustment, lengths not 44: L1=${line1ToParse.length}, L2=${line2ToParse.length}",
                         )
                     }
                 }
@@ -513,22 +537,28 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
                 }
 
                 if (line2ToParse != null) {
-                    if (line1ToParse.length < 44) line1ToParse = line1ToParse.padEnd(44, '<')
-                    else if (line1ToParse.length > 44) line1ToParse = line1ToParse.substring(0, 44)
-                    if (line2ToParse.length < 44) line2ToParse = line2ToParse.padEnd(44, '<')
-                    else if (line2ToParse.length > 44) line2ToParse = line2ToParse.substring(0, 44)
+                    if (line1ToParse.length < 44) {
+                        line1ToParse = line1ToParse.padEnd(44, '<')
+                    } else if (line1ToParse.length > 44) {
+                        line1ToParse = line1ToParse.substring(0, 44)
+                    }
+                    if (line2ToParse.length < 44) {
+                        line2ToParse = line2ToParse.padEnd(44, '<')
+                    } else if (line2ToParse.length > 44) {
+                        line2ToParse = line2ToParse.substring(0, 44)
+                    }
 
                     if (line1ToParse.length == 44 && line2ToParse.length == 44) {
                         Log.d(
-                                TAG,
-                                "Attempting parseMrzTd3 (non-strict) with adjusted lines: L1='${line1ToParse}', L2='${line2ToParse}'"
+                            TAG,
+                            "Attempting parseMrzTd3 (non-strict) with adjusted lines: L1='$line1ToParse', L2='$line2ToParse'",
                         )
                         val parsedData =
-                                parseMrzTd3(
-                                        line1ToParse,
-                                        line2ToParse,
-                                        performStrictValidation = false
-                                )
+                            parseMrzTd3(
+                                line1ToParse,
+                                line2ToParse,
+                                performStrictValidation = false,
+                            )
                         if (parsedData != null) {
                             Log.i(TAG, "Non-strict parseMrzTd3 returned data with adjusted lines.")
                             return parsedData
@@ -538,83 +568,86 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
                     }
                 } else {
                     Log.d(
-                            TAG,
-                            "Non-strict TD3 parsing: Could not find two distinct TD3-ish lines for fallback."
+                        TAG,
+                        "Non-strict TD3 parsing: Could not find two distinct TD3-ish lines for fallback.",
                     )
                 }
             }
         } else {
             Log.d(
-                    TAG,
-                    "Not enough TD3-ish lines (lengths 42-46) found. Need at least 2. Found: ${td3ishLines.size}"
+                TAG,
+                "Not enough TD3-ish lines (lengths 42-46) found. Need at least 2. Found: ${td3ishLines.size}",
             )
         }
         Log.d(TAG, "No valid MRZ (TD3 assumed for now) found after all attempts.")
         return null
     }
 
-    private fun validateCheckDigit(value: String, checkDigitChar: Char): Boolean {
+    private fun validateCheckDigit(
+        value: String,
+        checkDigitChar: Char,
+    ): Boolean {
         val expectedCheckDigit: Int =
-                when {
-                    checkDigitChar.isDigit() -> checkDigitChar.digitToInt()
-                    checkDigitChar == '<' -> 0
-                    else -> {
-                        Log.w(
-                                TAG,
-                                "validateCheckDigit: Invalid check digit character '$checkDigitChar' for value '$value'"
-                        )
-                        return false
-                    }
+            when {
+                checkDigitChar.isDigit() -> checkDigitChar.digitToInt()
+                checkDigitChar == '<' -> 0
+                else -> {
+                    Log.w(
+                        TAG,
+                        "validateCheckDigit: Invalid check digit character '$checkDigitChar' for value '$value'",
+                    )
+                    return false
                 }
+            }
         val weights = intArrayOf(7, 3, 1)
         var sum = 0
         for ((index, char) in value.withIndex()) {
             val weight = weights[index % weights.size]
             val charValue: Int =
-                    when {
-                        char == '<' -> 0
-                        char.isDigit() -> char.digitToInt()
-                        char.isLetter() -> char.uppercaseChar().code - 'A'.code + 10
-                        else -> {
-                            Log.w(
-                                    TAG,
-                                    "validateCheckDigit: Invalid character '$char' in value '$value' for check digit calculation."
-                            )
-                            return false
-                        }
+                when {
+                    char == '<' -> 0
+                    char.isDigit() -> char.digitToInt()
+                    char.isLetter() -> char.uppercaseChar().code - 'A'.code + 10
+                    else -> {
+                        Log.w(
+                            TAG,
+                            "validateCheckDigit: Invalid character '$char' in value '$value' for check digit calculation.",
+                        )
+                        return false
                     }
+                }
             sum += charValue * weight
         }
         val calculatedCheckDigit = sum % 10
         val isValid = calculatedCheckDigit == expectedCheckDigit
         if (!isValid) {
             Log.w(
-                    TAG,
-                    "validateCheckDigit: Mismatch for '$value'. Expected: $expectedCheckDigit (from char '$checkDigitChar'), Calculated: $calculatedCheckDigit"
+                TAG,
+                "validateCheckDigit: Mismatch for '$value'. Expected: $expectedCheckDigit (from char '$checkDigitChar'), Calculated: $calculatedCheckDigit",
             )
         } else {
             Log.d(
-                    TAG,
-                    "validateCheckDigit: SUCCESS for '$value'. Expected: $expectedCheckDigit, Calculated: $calculatedCheckDigit"
+                TAG,
+                "validateCheckDigit: SUCCESS for '$value'. Expected: $expectedCheckDigit, Calculated: $calculatedCheckDigit",
             )
         }
         return isValid
     }
 
     private fun parseMrzTd3(
-            line1: String,
-            line2: String,
-            performStrictValidation: Boolean = true
+        line1: String,
+        line2: String,
+        performStrictValidation: Boolean = true,
     ): Map<String, Any>? {
         Log.d(
-                TAG,
-                "parseMrzTd3 (strict=$performStrictValidation): Using L1='${line1}', L2='${line2}'"
+            TAG,
+            "parseMrzTd3 (strict=$performStrictValidation): Using L1='$line1', L2='$line2'",
         )
 
         if (line1.length != 44 || line2.length != 44) {
             Log.e(
-                    TAG,
-                    "parseMrzTd3: CRITICAL - Lines are not 44 chars. L1=${line1.length}, L2=${line2.length}."
+                TAG,
+                "parseMrzTd3: CRITICAL - Lines are not 44 chars. L1=${line1.length}, L2=${line2.length}.",
             )
             return null
         }
@@ -632,10 +665,10 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
             val documentNumber = documentNumberRaw.replace("<", "")
 
             val nationality = line2.substring(10, 13)
-            val dobRaw = line2.substring(13, 19)
+            val dob = line2.substring(13, 19)
             val dobCheckChar = line2[19]
             val sex = line2.substring(20, 21)
-            val expiryRaw = line2.substring(21, 27)
+            val expiry = line2.substring(21, 27)
             val expiryCheckChar = line2[27]
 
             val optionalData1Raw = line2.substring(28, 42)
@@ -647,95 +680,67 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
             var isValid = true
             if (performStrictValidation) {
                 if (!validateCheckDigit(documentNumberRaw, documentNumberCheckChar)) isValid = false
-                if (isValid && !validateCheckDigit(dobRaw, dobCheckChar)) isValid = false
-                if (isValid && !validateCheckDigit(expiryRaw, expiryCheckChar)) isValid = false
+                if (isValid && !validateCheckDigit(dob, dobCheckChar)) isValid = false
+                if (isValid && !validateCheckDigit(expiry, expiryCheckChar)) isValid = false
 
                 if (isValid) {
                     if (optionalData1Raw.all { it == '<' }) {
                         if (optionalData1CheckChar != '<') {
                             Log.w(
-                                    TAG,
-                                    "Optional data is all fillers, but its check digit '$optionalData1CheckChar' is not '<'. Invalidating."
+                                TAG,
+                                "Optional data is all fillers, but its check digit '$optionalData1CheckChar' is not '<'. Invalidating.",
                             )
                             isValid = false
                         }
                     } else {
-                        if (!validateCheckDigit(optionalData1Raw, optionalData1CheckChar))
-                                isValid = false
+                        if (!validateCheckDigit(optionalData1Raw, optionalData1CheckChar)) {
+                            isValid = false
+                        }
                     }
                 }
 
                 if (isValid) {
                     val compositeValue =
-                            documentNumberRaw +
-                                    documentNumberCheckChar +
-                                    dobRaw +
-                                    dobCheckChar +
-                                    expiryRaw +
-                                    expiryCheckChar +
-                                    optionalData1Raw +
-                                    optionalData1CheckChar
+                        documentNumberRaw +
+                            documentNumberCheckChar +
+                            dob +
+                            dobCheckChar +
+                            expiry +
+                            expiryCheckChar +
+                            optionalData1Raw +
+                            optionalData1CheckChar
                     if (!validateCheckDigit(compositeValue, overallCheckChar)) isValid = false
                 }
                 Log.d(TAG, "parseMrzTd3: Strict validation result: $isValid")
             } else {
                 Log.d(
-                        TAG,
-                        "parseMrzTd3: Skipping strict validation (isValid remains true by default for this path)."
+                    TAG,
+                    "parseMrzTd3: Skipping strict validation (isValid remains true by default for this path).",
                 )
             }
 
-            fun formatYYMMDD(yymmdd: String): String? {
-                if (yymmdd.length != 6 || !yymmdd.all { it.isDigit() }) {
-                    Log.w(TAG, "formatYYMMDD: Invalid input (must be 6 digits) '$yymmdd'")
-                    return null
-                }
-                try {
-                    val year = yymmdd.substring(0, 2).toInt()
-                    val month = yymmdd.substring(2, 4).toInt()
-                    val day = yymmdd.substring(4, 6).toInt()
-                    if (month !in 1..12 || day !in 1..31) {
-                        Log.w(TAG, "formatYYMMDD: Invalid month/day in '$yymmdd'")
-                        return null
-                    }
-                    val currentYear = java.time.Year.now().value
-                    val currentCentury = (currentYear / 100) * 100
-                    val currentYearLastTwoDigits = currentYear % 100
-
-                    val fullYear =
-                            if (year > (currentYearLastTwoDigits + 20) && year <= 99) {
-                                currentCentury - 100 + year
-                            } else {
-                                currentCentury + year
-                            }
-                    return String.format("%04d-%02d-%02d", fullYear, month, day)
-                } catch (e: NumberFormatException) {
-                    Log.e(TAG, "formatYYMMDD: NumberFormatException for '$yymmdd'", e)
-                    return null
-                }
-            }
             val parsedResultMap =
-                    mapOf(
-                            "raw" to "$line1\n$line2",
-                            "documentType" to documentType,
-                            "issuingCountry" to issuingCountry,
-                            "documentNumber" to documentNumber,
-                            "surname" to surname,
-                            "givenNames" to givenNames,
-                            "nationality" to nationality,
-                            "dateOfBirth" to (formatYYMMDD(dobRaw) ?: dobRaw),
-                            "sex" to sex,
-                            "expiryDate" to (formatYYMMDD(expiryRaw) ?: expiryRaw),
-                            "optionalData" to optionalData1,
-                            "isValid" to isValid
-                    )
+                mapOf(
+                    "raw" to "$line1\n$line2",
+                    "documentType" to documentType,
+                    "issuingCountry" to issuingCountry,
+                    "documentNumber" to documentNumber,
+                    "surname" to surname,
+                    "givenNames" to givenNames,
+                    "nationality" to nationality,
+                    "dateOfBirth" to dob,
+                    "sex" to sex,
+                    "expiryDate" to expiry,
+                    "optionalData" to optionalData1,
+                    "isValid" to isValid,
+                )
             Log.d(TAG, "parseMrzTd3: Returning: $parsedResultMap")
             return parsedResultMap
         } catch (e: StringIndexOutOfBoundsException) {
             Log.e(
-                    TAG,
-                    "MRZ parsing StringIndexOutOfBoundsException for L1: '$line1', L2: '$line2'",
-                    e
+                TAG,
+                "MRZ parsing StringIndexOutOfBoundsException for L1: '$line1', L2: '$line2'",
+                e,
             )
             return null
         } catch (e: Exception) {
@@ -746,19 +751,23 @@ class MrzReaderView(context: Context, appContext: AppContext) : ExpoView(context
 
     // Note: cleanMrzString is not shown in the original but is required. Here's a minimal
     // implementation.
-    private fun cleanMrzString(input: String): String {
-        return input.replace("[^A-Z0-9<]".toRegex(), "").uppercase()
-    }
+    private fun cleanMrzString(input: String): String = input.replace("[^A-Z0-9<]".toRegex(), "").uppercase()
 
-    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+    override fun onLayout(
+        changed: Boolean,
+        left: Int,
+        top: Int,
+        right: Int,
+        bottom: Int,
+    ) {
         super.onLayout(changed, left, top, right, bottom)
         if (changed) {
             Log.d(TAG, "onLayout: PreviewView size changed to ${right - left}x${bottom - top}")
             // If camera setup was pending due to layout, retry now
             if (!isCameraStartedAndBound.get() &&
-                            !isCameraSetupInProgress.get() &&
-                            allPermissionsGranted() &&
-                            isAttachedToWindow
+                !isCameraSetupInProgress.get() &&
+                allPermissionsGranted() &&
+                isAttachedToWindow
             ) {
                 currentLifecycleOwner?.let { owner ->
                     if (owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
