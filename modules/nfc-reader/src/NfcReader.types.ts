@@ -21,6 +21,10 @@ export type PassportData = {
   dataGroupsPresent: string[];
   countrySigningCertificate: X509Wrapper;
   documentSigningCertificate: X509Wrapper;
+  /** Base64-encoded SOD (Security Object Document) raw binary data */
+  sod?: string;
+  /** Base64-encoded DG1 (Data Group 1) raw binary data */
+  dg1?: string;
 };
 
 export type X509Wrapper = {

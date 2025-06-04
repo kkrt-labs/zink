@@ -1,4 +1,5 @@
 import NfcReader from "@modules/nfc-reader/src";
+import { PassportData } from "@modules/nfc-reader/src/NfcReader.types";
 import { useMutation } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as React from "react";
@@ -10,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { PassportData, PassportDataView } from "../components/passport-data";
+import { PassportDataView } from "../components/passport-data";
 
 export default function NfcScreen() {
   const router = useRouter();
