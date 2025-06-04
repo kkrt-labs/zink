@@ -3,13 +3,13 @@ import {
   PassportDataProps,
 } from "@modules/nfc-reader/src/NfcReader.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Binary, SOD } from "@zkpassport/utils";
 import { Buffer } from "buffer";
 import { getRandomValues } from "expo-crypto";
 import * as SecureStore from "expo-secure-store";
 import * as React from "react";
 import {
   Alert,
+  Button,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,10 +18,12 @@ import {
 } from "react-native";
 
 // Import the shared constant and function from saved-passport
+import { useAssets } from "expo-asset";
 import {
   PASSPORT_DATA_KEY,
   loadPassportDataFromStore,
 } from "../app/saved-passport";
+import { getCircuitInputs } from "./utils/proverInputs";
 
 // Set up minimal polyfills
 global.Buffer = global.Buffer || Buffer;
@@ -42,6 +44,17 @@ const clearPassportDataFromStore = async (): Promise<void> => {
 
 export const PassportDataView: React.FC<PassportDataProps> = ({ data }) => {
   const queryClient = useQueryClient();
+
+  /* trunk-ignore(eslint/@typescript-eslint/no-require-imports) */
+  const [assets, error] = useAssets([require("../assets/csca/masterlist.pem")]);
+  if (error) {
+    console.error(error);
+  }
+
+  const { data: masterList, isLoading: isMasterListLoading } = useQuery({
+    queryKey: ["masterList"],
+    queryFn: () => fetch(assets?.[0]?.uri ?? "").then((res) => res.text()),
+  });
 
   // Check if data is already saved
   const { data: savedData } = useQuery({
@@ -77,11 +90,6 @@ export const PassportDataView: React.FC<PassportDataProps> = ({ data }) => {
 
   const isSaved = savedData?.documentNumber === data.documentNumber;
 
-  const sodFromBase64 = data.sod
-    ? SOD.fromDER(Binary.fromBase64(data.sod))
-    : null;
-  const dg1FromBase64 = data.dg1 ? Binary.fromBase64(data.dg1) : null;
-
   const renderCertificateInfo = (
     cert: PassportData["documentSigningCertificate"],
     title: string,
@@ -99,11 +107,6 @@ export const PassportDataView: React.FC<PassportDataProps> = ({ data }) => {
 
   return (
     <ScrollView style={styles.scrollView}>
-      {/* Data Storage Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Data Storage</Text>
-      </View>
-
       {/* Personal Information Section */}
       <View style={styles.dataContainer}>
         <View style={styles.section}>
@@ -164,17 +167,6 @@ export const PassportDataView: React.FC<PassportDataProps> = ({ data }) => {
           )}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>SOD Digest Algorithms</Text>
-        <Text style={styles.value}>
-          {sodFromBase64?.digestAlgorithms.join(", ")}
-        </Text>
-      </View>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>DG1</Text>
-        <Text style={styles.value}>{dg1FromBase64?.toBase64()}</Text>
-      </View>
-
       <View style={styles.buttonRow}>
         <TouchableOpacity
           style={[styles.saveButton, isSaved && styles.savedButton]}
@@ -192,7 +184,7 @@ export const PassportDataView: React.FC<PassportDataProps> = ({ data }) => {
 
         {savedData && (
           <TouchableOpacity
-            style={styles.clearButton}
+            style={[styles.clearButton, ,]}
             onPress={() => clearDataMutation.mutate()}
             disabled={clearDataMutation.isPending}
           >
@@ -201,6 +193,15 @@ export const PassportDataView: React.FC<PassportDataProps> = ({ data }) => {
             </Text>
           </TouchableOpacity>
         )}
+
+        <Button
+          title="Get Circuit Inputs"
+          disabled={isMasterListLoading || !masterList}
+          onPress={() => {
+            const inputs = getCircuitInputs(data, masterList!);
+            console.log(inputs);
+          }}
+        />
       </View>
     </ScrollView>
   );

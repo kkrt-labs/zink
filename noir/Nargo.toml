@@ -1,0 +1,9 @@
+[package]
+name = "zink"
+type = "bin"
+authors = ["Elias Tazartes"]
+compiler_version = ">=1.0.0"
+
+[dependencies]
+sig_check_rsa = { git = "https://github.com/zkpassport/circuits", tag = "main", directory="src/noir/lib/sig-check/rsa" }
+data_check_tbs_pubkey = { git = "https://github.com/zkpassport/circuits", tag = "main", directory="src/noir/lib/data-check/tbs-pubkey" }

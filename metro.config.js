@@ -8,4 +8,7 @@ defaultConfig.resolver.nodeModulesPaths = [
   ...defaultConfig.resolver.nodeModulesPaths,
   path.resolve(__dirname, "modules"),
 ];
+
+defaultConfig.resolver.assetExts.push("pem");
+
 module.exports = defaultConfig;
