@@ -774,7 +774,7 @@ dependencies = [
 [[package]]
 name = "block-multiplier"
 version = "0.1.0"
-source = "git+https://github.com/worldfnd/ProveKit#e04af7f48f46da7ea37161c11d2e4d3f802fea9f"
+source = "git+https://github.com/worldfnd/ProveKit?rev=a2c4c7bafeadb7db455a584e5466de7976d9e533#a2c4c7bafeadb7db455a584e5466de7976d9e533"
 dependencies = [
  "block-multiplier-codegen",
  "fp-rounding",
@@ -785,7 +785,7 @@ dependencies = [
 [[package]]
 name = "block-multiplier-codegen"
 version = "0.1.0"
-source = "git+https://github.com/worldfnd/ProveKit#e04af7f48f46da7ea37161c11d2e4d3f802fea9f"
+source = "git+https://github.com/worldfnd/ProveKit?rev=a2c4c7bafeadb7db455a584e5466de7976d9e533#a2c4c7bafeadb7db455a584e5466de7976d9e533"
 dependencies = [
  "hla",
 ]
@@ -1389,7 +1389,7 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 [[package]]
 name = "fp-rounding"
 version = "0.1.0"
-source = "git+https://github.com/worldfnd/ProveKit#e04af7f48f46da7ea37161c11d2e4d3f802fea9f"
+source = "git+https://github.com/worldfnd/ProveKit?rev=a2c4c7bafeadb7db455a584e5466de7976d9e533#a2c4c7bafeadb7db455a584e5466de7976d9e533"
 
 [[package]]
 name = "fs-err"
@@ -1581,7 +1581,7 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 [[package]]
 name = "hla"
 version = "0.1.0"
-source = "git+https://github.com/worldfnd/ProveKit#e04af7f48f46da7ea37161c11d2e4d3f802fea9f"
+source = "git+https://github.com/worldfnd/ProveKit?rev=a2c4c7bafeadb7db455a584e5466de7976d9e533#a2c4c7bafeadb7db455a584e5466de7976d9e533"
 dependencies = [
  "paste",
 ]
@@ -1955,7 +1955,7 @@ dependencies = [
 [[package]]
 name = "noir-r1cs"
 version = "0.1.0"
-source = "git+https://github.com/worldfnd/ProveKit#e04af7f48f46da7ea37161c11d2e4d3f802fea9f"
+source = "git+https://github.com/worldfnd/ProveKit?rev=a2c4c7bafeadb7db455a584e5466de7976d9e533#a2c4c7bafeadb7db455a584e5466de7976d9e533"
 dependencies = [
  "acir",
  "acir_field",
@@ -1972,7 +1972,7 @@ dependencies = [
  "bytes",
  "flate2",
  "hex",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "noirc_abi",
  "noirc_artifacts",
  "postcard",
@@ -1985,6 +1985,7 @@ dependencies = [
  "skyscraper",
  "spongefish",
  "spongefish-pow",
+ "static_assertions",
  "tracing",
  "tracing-subscriber 0.3.19",
  "whir",
@@ -3030,7 +3031,7 @@ dependencies = [
 [[package]]
 name = "skyscraper"
 version = "0.1.0"
-source = "git+https://github.com/worldfnd/ProveKit#e04af7f48f46da7ea37161c11d2e4d3f802fea9f"
+source = "git+https://github.com/worldfnd/ProveKit?rev=a2c4c7bafeadb7db455a584e5466de7976d9e533#a2c4c7bafeadb7db455a584e5466de7976d9e533"
 dependencies = [
  "ark-bn254",
  "ark-ff 0.5.0",

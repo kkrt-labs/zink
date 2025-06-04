@@ -10,7 +10,7 @@ nargo = { git = "https://github.com/noir-lang/noir.git", package = "nargo", rev 
 noirc_abi = { git = "https://github.com/noir-lang/noir.git", package = "noirc_abi", rev = "v1.0.0-beta.3" }
 noirc_artifacts = { git = "https://github.com/noir-lang/noir.git", package = "noirc_artifacts", rev = "v1.0.0-beta.3" }
 
-noir-r1cs = { git = "https://github.com/worldfnd/ProveKit", package = "noir-r1cs"}
+noir-r1cs = { git = "https://github.com/worldfnd/ProveKit", package = "noir-r1cs", rev = "a2c4c7bafeadb7db455a584e5466de7976d9e533"}
 
 serde = "1.0.219"
 serde_json = "1.0.140"

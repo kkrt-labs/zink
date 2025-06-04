@@ -1,7 +1,7 @@
 import { PassportData } from "@modules/nfc-reader/src/NfcReader.types";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import * as React from "react";
 import {
   SafeAreaView,
@@ -17,7 +17,7 @@ export const PASSPORT_DATA_KEY = "encrypted_passport_data";
 export const loadPassportDataFromStore =
   async (): Promise<PassportData | null> => {
     try {
-      const serializedData = await SecureStore.getItemAsync(PASSPORT_DATA_KEY);
+      const serializedData = await AsyncStorage.getItem(PASSPORT_DATA_KEY);
       if (!serializedData) {
         return null;
       }
@@ -88,10 +88,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     elevation: 3,
   },
   title: {

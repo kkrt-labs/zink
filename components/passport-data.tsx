@@ -2,10 +2,11 @@ import {
   PassportData,
   PassportDataProps,
 } from "@modules/nfc-reader/src/NfcReader.types";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Buffer } from "buffer";
 import { getRandomValues } from "expo-crypto";
-import * as SecureStore from "expo-secure-store";
+
 import * as React from "react";
 import {
   Alert,
@@ -16,7 +17,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
+import ZkBindings from "zk-bindings";
 // Import the shared constant and function from saved-passport
 import { useAssets } from "expo-asset";
 import {
@@ -35,14 +36,18 @@ global.crypto = global.crypto || { getRandomValues };
 // We should consider using a different storage solution, like a database or a file system
 const savePassportDataToStore = async (data: PassportData): Promise<void> => {
   const serializedData = JSON.stringify(data);
-  await SecureStore.setItemAsync(PASSPORT_DATA_KEY, serializedData);
+  await AsyncStorage.setItem(PASSPORT_DATA_KEY, serializedData);
 };
 
 const clearPassportDataFromStore = async (): Promise<void> => {
-  await SecureStore.deleteItemAsync(PASSPORT_DATA_KEY);
+  await AsyncStorage.removeItem(PASSPORT_DATA_KEY);
 };
 
+const passportCircuit = require("../assets/noir/zink.json");
+
 export const PassportDataView: React.FC<PassportDataProps> = ({ data }) => {
+  const [circuitInputs, setCircuitInputs] = React.useState<string>("");
+
   const queryClient = useQueryClient();
 
   /* trunk-ignore(eslint/@typescript-eslint/no-require-imports) */
@@ -60,6 +65,21 @@ export const PassportDataView: React.FC<PassportDataProps> = ({ data }) => {
   const { data: savedData } = useQuery({
     queryKey: ["savedPassportData"],
     queryFn: loadPassportDataFromStore,
+  });
+
+  const generateProofMutation = useMutation({
+    mutationFn: async () => {
+      return ZkBindings.generateProof(
+        JSON.stringify(passportCircuit),
+        circuitInputs,
+      );
+    },
+    onSuccess: (proof) => {
+      console.log(proof);
+    },
+    onError: (error: Error) => {
+      Alert.alert("Error", `Failed to generate proof: ${error.message}`);
+    },
   });
 
   // Save data mutation
@@ -199,8 +219,14 @@ export const PassportDataView: React.FC<PassportDataProps> = ({ data }) => {
           disabled={isMasterListLoading || !masterList}
           onPress={() => {
             const inputs = getCircuitInputs(data, masterList!);
-            console.log(inputs);
+            setCircuitInputs(JSON.stringify(inputs));
           }}
+        />
+
+        <Button
+          title="Generate Proof"
+          disabled={circuitInputs === "" || generateProofMutation.isPending}
+          onPress={() => generateProofMutation.mutate()}
         />
       </View>
     </ScrollView>
@@ -221,9 +247,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     elevation: 3,
     margin: 16,
   },

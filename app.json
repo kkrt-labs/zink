@@ -27,10 +27,7 @@
         ]
       },
       "entitlements": {
-        "com.apple.developer.nfc.readersession.formats": [
-          "TAG",
-          "NDEF"
-        ]
+        "com.apple.developer.nfc.readersession.formats": ["TAG", "NDEF"]
       }
     },
     "android": {
@@ -40,10 +37,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "org.kakarot.zink",
-      "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.NFC"
-      ]
+      "permissions": ["android.permission.CAMERA", "android.permission.NFC"]
     },
     "web": {
       "bundler": "metro",
@@ -71,16 +65,7 @@
       [
         "expo-custom-assets",
         {
-          "assetsPaths": [
-            "./assets/csca"
-          ]
-        }
-      ],
-      [
-        "expo-secure-store",
-        {
-          "configureAndroidBackup": true,
-          "faceIDPermission": "Allow $(PRODUCT_NAME) to access your Face ID biometric data."
+          "assetsPaths": ["./assets/csca"]
         }
       ],
       "expo-asset"
