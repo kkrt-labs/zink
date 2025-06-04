@@ -28,6 +28,9 @@ global.Buffer = global.Buffer || Buffer;
 global.crypto = global.crypto || { getRandomValues };
 
 // Storage functions
+// ⚠️ Because of the size of the data (roughly 4kb), we are above the 2048 bytes limit of the secure store
+// It creates a risk of flakiness when saving and loading the data
+// We should consider using a different storage solution, like a database or a file system
 const savePassportDataToStore = async (data: PassportData): Promise<void> => {
   const serializedData = JSON.stringify(data);
   await SecureStore.setItemAsync(PASSPORT_DATA_KEY, serializedData);
